@@ -18,18 +18,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hebertcisco/ts-npm-package-boilerplate.git"
+    "url": "git@github.com:outsidecube/db-api-sync.git"
   },
   "keywords": [
     "boilerplate",
     "typescript"
   ],
-  "author": "Hebert Cisco",
-  "license": "MIT",
+  "author": "Juan Ignacio Garzón",
+  "license": "BSD 2.0",
   "bugs": {
-    "url": "https://github.com/hebertcisco/ts-npm-package-boilerplate/issues"
+    "url": "https://github.com/outsidecube/db-api-sync/issues"
   },
-  "homepage": "https://github.com/hebertcisco/ts-npm-package-boilerplate#readme",
+  "homepage": "https://github.com/outsidecube/db-api-sync#readme",
   "devDependencies": {
     "@types/jest": "29.4.0",
     "@typescript-eslint/eslint-plugin": "5.54.0",
