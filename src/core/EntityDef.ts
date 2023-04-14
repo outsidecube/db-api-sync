@@ -1,8 +1,17 @@
 /* eslint-disable class-methods-use-this */
+import { AuthHandler } from "../auth/AuthHandler";
+import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { EntitySyncResults } from "./EntitySyncResults";
+import { SynchronizerConfig } from "./SynchronizerConfig";
 
 
 export class EntityDef {
+  config?: SynchronizerConfig;
+
+  authHandler?: AuthHandler;
+
+  fetchRevisionHandler?: FetchRevisionHandler;
+
   public fetchEntities(): EntitySyncResults {
     const results: EntitySyncResults = {
     };

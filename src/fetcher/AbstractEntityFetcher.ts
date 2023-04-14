@@ -1,13 +1,8 @@
-import { AuthHandler } from "../auth/AuthHandler";
-import { EntityDef } from "../core/EntityDef"
-import { FetchRevisionHandler } from "./FetchRevisionHandler";
+import { EntityDef } from "../core/EntityDef";
 
 export type EntityFetchCallback = (entityDef: EntityDef, rawEntityObject: unknown) => Promise<void>;
 
 export interface AbstractEntityFetcher {
   retrieveEntities(callback: EntityFetchCallback,
-
-
-    fetchRevisionHandler: FetchRevisionHandler,
-    authHandler: AuthHandler): Promise<void>
+    entityDef: EntityDef): Promise<void>
 }

@@ -15,6 +15,7 @@ export class Synchronizer {
   constructor(config: SynchronizerConfig, entityDefs: EntityDef[]) {
     this.config = config;
     this.entityDefs = entityDefs;
+    this.entityDefs.forEach(e => { e.config = config })
   }
 
   public async fetchAll(callback: EntitySyncCallback) {
