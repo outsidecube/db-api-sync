@@ -87,6 +87,8 @@ The configuration object has a structure defined in `SynchronizerConfig.ts`. It 
 ## 🤝 Contributing
 
 Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](issues).
+The starting point for contributing is understanding the class design:
+<img width="100px" src="https://raw.githubusercontent.com/outsidecube/db-api-sync/master/docs/db-api-sync.png" align="center" alt=":package: ts-npm-package-boilerplate" />
 
 ## Show your support
 
