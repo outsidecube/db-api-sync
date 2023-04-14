@@ -35,6 +35,55 @@ Install this library
 npm install --save @outsidecube/db-api-sync
 ```
 
+## Configuration
+In order to configure this you will need to provide.
+### 1. Processor object
+Before you start using the Synchronizer, you will need to write a class that implements `HTTPResponseProcessor`, with the following signature:
+`readEntities(callback: EntityFetchCallback, originalRequest: HTTPRequest): Promise<void>`
+
+This would be a minimal example:
+```ts
+import {
+  EntityDef,
+  EntityFetchCallback,
+  HTTPRequest,
+  HTTPResponseProcessor,
+} from '@outsidecube/db-api-sync';
+
+export default class MyCustomProcessor implements HTTPResponseProcessor {
+  async readEntities(
+    callback: EntityFetchCallback,
+    entityDef: EntityDef,
+    originalRequest: HTTPRequest,
+  ): Promise<void> {
+    const r: Response = await originalRequest.fetch();
+    const { data } = await r.json();
+    for (const element of data) {
+      await callback(entityDef, element);
+    }
+  }
+}
+```
+
+### 2. Configuration Object
+The configuration object has a structure defined in `SynchronizerConfig.ts`. It has the following elements:
+```js
+{
+  baseURI: "[base URI for API]",
+  fetchers: [
+    {
+      name: "default",
+      default: true,
+      type: "RESTEntityFetcher",
+      config: {
+        //here comes the custom procesor defined
+        "responseProcessor": new MyCustomProcessor(); 
+      }
+    }
+  ]
+}
+```
+
 ## 🤝 Contributing
 
 Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](issues).

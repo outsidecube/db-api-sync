@@ -1,7 +1,7 @@
 {
-  "name": "ts-npm-package-boilerplate",
-  "version": "0.2.3",
-  "description": "TypeScript NPM Module Boilerplate",
+  "name": "@outsidecube/db-api-sync",
+  "version": "0.0.1",
+  "description": "Local/remote synchronization library targeted to offline first apps",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -51,5 +51,8 @@
   },
   "files": [
     "lib/**/*"
-  ]
+  ],
+  "dependencies": {
+    "jsonpath": "^1.1.1"
+  }
 }
