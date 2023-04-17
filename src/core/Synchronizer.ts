@@ -1,6 +1,8 @@
+import { AuthHandler } from "../auth/AuthHandler";
+import { SynchronizerConfig } from "../config/SynchronizerConfig";
+import { DBImplementation } from "../storage/DBImplementation";
 import { EntityDef } from "./EntityDef";
 import { EntitySyncCallback } from "./EntitySyncCallback";
-import { SynchronizerConfig } from "./SynchronizerConfig";
 import { SyncOperation } from "./SyncOperation";
 
 /**
@@ -10,19 +12,24 @@ import { SyncOperation } from "./SyncOperation";
 export class Synchronizer {
   config: SynchronizerConfig;
 
-  private entityDefs: EntityDef[];
+  entityDefs: Map<string, EntityDef>;
 
-  constructor(config: SynchronizerConfig, entityDefs: EntityDef[]) {
+  authHandler?: AuthHandler
+
+  generalDBImplementation?: DBImplementation;
+
+
+  constructor(config: SynchronizerConfig) {
     this.config = config;
-    this.entityDefs = entityDefs;
-    this.entityDefs.forEach(e => { e.config = config })
+    this.entityDefs = new Map<string, EntityDef>();
+
   }
 
   public async fetchAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.length;
+    const totalCount = this.entityDefs.size;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const entity of this.entityDefs) {
+    for (const [, entity] of this.entityDefs) {
       callback?.onEntitySyncStarted(entity, SyncOperation.FETCH);
       // eslint-disable-next-line no-await-in-loop
       const results = await entity.fetchEntities()
@@ -33,10 +40,10 @@ export class Synchronizer {
   }
 
   public async sendAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.length;
+    const totalCount = this.entityDefs.size;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const entity of this.entityDefs) {
+    for (const [, entity] of this.entityDefs) {
 
       callback?.onEntitySyncStarted(entity, SyncOperation.SEND);
       // eslint-disable-next-line no-await-in-loop
@@ -48,10 +55,10 @@ export class Synchronizer {
   }
 
   public async deleteAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.length;
+    const totalCount = this.entityDefs.size;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const entity of this.entityDefs) {
+    for (const [, entity] of this.entityDefs) {
       callback?.onEntitySyncStarted(entity, SyncOperation.DELETE);
       // eslint-disable-next-line no-await-in-loop
       const results = await entity.deleteEntities();
@@ -61,3 +68,5 @@ export class Synchronizer {
     }
   }
 }
+
+
