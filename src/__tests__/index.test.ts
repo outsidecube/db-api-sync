@@ -1,13 +1,74 @@
-import uuid from '../index';
+import { EntityDef, Synchronizer, SynchronizerConfig, buildSynchronizer } from '../index';
+import { EntityLocalStorage } from '../storage/EntityLocalStorage';
+import { SQLFieldMappingStorage } from '../storage/SQLFieldMappingStorage';
+import { MockDBImplementation } from './helper/MockDBImplementation';
 
-describe('valid UUID', () => {
-  let VALID_UUID_REGEX: RegExp;
+describe('valid EntityDefBuilder', () => {
+  let synchronizer: Synchronizer;
 
   beforeAll(() => {
-    VALID_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const config: SynchronizerConfig = {
+      baseURI: 'https://testapi.com/api/v1',
+      authorization: {
+        handler: 'BearerAuthHandler',
+        config: {
+          token: 'token',
+        },
+      },
+      generalDBImplementation: new MockDBImplementation(),
+      revisionHandlers: [
+        {
+          name: 'timestampHandler',
+          revisionHandler: 'TimestampFieldRevisionHandler',
+          config: {
+            timestampFieldName: 'Timestamp',
+            timestampParameterName: 'timestamp',
+          },
+        },
+      ],
+      entityDefs: [
+        {
+          name: 'User',
+          localStorage: {
+            entityLocalStorage: 'SQLFieldMapping',
+            config: {
+              tablename: 'User',
+              idFieldName: 'id',
+              mappings: {
+                Id: 'id',
+                FirstName: 'firstName',
+                LastName: 'lastName',
+                Email: 'email'
+              },
+            },
+          },
+          fetcher: {
+            fetcher: 'RESTEntityFetcher',
+            revisionHandler: 'timestampHandler',
+            config: {
+              uriPath: '/users',
+            },
+          },
+        },
+      ],
+    };
+    synchronizer = buildSynchronizer(config);
   });
 
-  test('should match a valid UUID', () => {
-    expect(VALID_UUID_REGEX.test(uuid.v4())).toBeTruthy();
+  test('should have the right localstorage type', () => {
+    const ef: EntityDef = synchronizer.entityDefs.values().next().value;
+    expect(ef.localStorage instanceof EntityLocalStorage);
+    expect(ef.localStorage instanceof SQLFieldMappingStorage);
+  });
+
+  test('should have the right table within localstorage', () => {
+    const ef: EntityDef = synchronizer.entityDefs.values().next().value;
+    const ls: SQLFieldMappingStorage = ef.localStorage as SQLFieldMappingStorage;
+    expect(ls.tableName === 'Users')
+  });
+  test('should have the right id column within localstorage', () => {
+    const ef: EntityDef = synchronizer.entityDefs.values().next().value;
+    const ls: SQLFieldMappingStorage = ef.localStorage as SQLFieldMappingStorage;
+    expect(ls.idFieldName === 'id')
   });
 });
