@@ -6,3 +6,6 @@ lib
 
 # don't lint nyc coverage output
 coverage
+
+__tests__
+jest.config.js
