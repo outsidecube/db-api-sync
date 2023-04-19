@@ -2,6 +2,7 @@ import { AuthHandler } from "../auth/AuthHandler"
 import { BearerAuthHandlerConfig } from "../auth/BearerAuthHandler";
 import { AbstractEntityFetcher } from "../fetcher/AbstractEntityFetcher"
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
+import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
 import { RESTEntityFetcherConfig } from "../fetcher/RESTEntityFetcher";
 import { TimestampFieldRevisionHandlerConfig } from "../fetcher/TimestampFieldRevisionHandler";
 import { DBImplementation } from "../storage/DBImplementation";
@@ -44,11 +45,16 @@ export type FormatterConfig = {
   name: string,
   formatter: Formatter
 }
+export type HTTPResponseProcessorConfig = {
+  name: string,
+  httpResponseProcessor: HTTPResponseProcessor
+}
 export type SynchronizerConfig = {
   baseURI: string,
   entityDefs: Array<EntityDefConfig>,
   authorization: AuthorizationConfig,
   revisionHandlers: Array<FetchRevisionHandlerConfig>,
   formatters?: Array<FormatterConfig>,
+  httpResponseProcessors?: Array<HTTPResponseProcessorConfig>
   globalDBImplementation?: DBImplementation,
 }

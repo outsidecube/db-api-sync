@@ -1,6 +1,7 @@
 import { AuthHandler } from "../auth/AuthHandler";
 import { Formatter, SynchronizerConfig } from "../config/SynchronizerConfig";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
+import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
 import { DBImplementation } from "../storage/DBImplementation";
 import { EntityDef } from "./EntityDef";
 import { EntitySyncCallback } from "./EntitySyncCallback";
@@ -23,11 +24,15 @@ export class Synchronizer {
 
   formatters: Map<string, Formatter>;
 
+  httpResponseProcessors: Map<string, HTTPResponseProcessor>;
+
   constructor(config: SynchronizerConfig) {
     this.config = config;
     this.entityDefs = new Map<string, EntityDef>();
     this.fetchRevisionHandlers = new Map<string, FetchRevisionHandler>();
     this.formatters = new Map<string, Formatter>();
+    this.httpResponseProcessors = new Map<string, HTTPResponseProcessor>();
+
   }
 
   public async fetchAll(callback: EntitySyncCallback) {
