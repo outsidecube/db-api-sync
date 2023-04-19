@@ -61,7 +61,7 @@ export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchro
         httpResponseProcessor = config.responseProcessor
       }
       if (!httpResponseProcessor) {
-        throw new Error(`No ResponseProcessor for fetcher ${fetcherConfig}`)
+        throw new Error(`No ResponseProcessor for fetcher ${JSON.stringify(fetcherConfig)}`)
       }
       fetcher = new RESTEntityFetcher(config.uriPath, httpResponseProcessor, config.method, config.additionalQueryParams);
     } else {

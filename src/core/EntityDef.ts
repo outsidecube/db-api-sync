@@ -3,7 +3,7 @@ import { AuthHandler } from "../auth/AuthHandler";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { EntitySyncResults } from "./EntitySyncResults";
 import { SynchronizerConfig } from "../config/SynchronizerConfig";
-import { AbstractEntityFetcher } from "../fetcher/AbstractEntityFetcher";
+import { AbstractEntityFetcher, EntityFetchCallback } from "../fetcher/AbstractEntityFetcher";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 
 
@@ -21,6 +21,11 @@ export class EntityDef {
   public fetchEntities(): EntitySyncResults {
     const results: EntitySyncResults = {
     };
+    const cb: EntityFetchCallback = async (entityDef: EntityDef, rawEntityObject) => {
+      console.log("received", rawEntityObject)
+      return this.localStorage?.saveEntity(rawEntityObject)
+    }
+    this.fetcher?.retrieveEntities(cb, this);
     results.insertedCount = 0;
     return results;
   }
