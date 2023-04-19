@@ -1,5 +1,5 @@
 import { AuthHandler } from "../auth/AuthHandler";
-import { SynchronizerConfig } from "../config/SynchronizerConfig";
+import { Formatter, SynchronizerConfig } from "../config/SynchronizerConfig";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { DBImplementation } from "../storage/DBImplementation";
 import { EntityDef } from "./EntityDef";
@@ -17,14 +17,17 @@ export class Synchronizer {
 
   authHandler?: AuthHandler
 
-  generalDBImplementation?: DBImplementation;
+  globalDBImplementation?: DBImplementation;
 
   fetchRevisionHandlers: Map<string, FetchRevisionHandler>;
+
+  formatters: Map<string, Formatter>;
 
   constructor(config: SynchronizerConfig) {
     this.config = config;
     this.entityDefs = new Map<string, EntityDef>();
     this.fetchRevisionHandlers = new Map<string, FetchRevisionHandler>();
+    this.formatters = new Map<string, Formatter>();
   }
 
   public async fetchAll(callback: EntitySyncCallback) {

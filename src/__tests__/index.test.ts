@@ -15,7 +15,7 @@ describe('valid EntityDefBuilder', () => {
           token: 'token',
         },
       },
-      generalDBImplementation: new MockDBImplementation(),
+      globalDBImplementation: new MockDBImplementation(),
       revisionHandlers: [
         {
           name: 'timestampHandler',
