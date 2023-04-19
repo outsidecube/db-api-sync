@@ -6,6 +6,9 @@ import { HTTPRequest } from "./request/HTTPRequest";
 import { EntityFetchCallback } from "./fetcher/AbstractEntityFetcher";
 import { EntitySyncCallback } from "./core/EntitySyncCallback";
 import { DBImplementation } from "./storage/DBImplementation";
+import { buildSynchronizer } from './config/Builder'
 
-export { Synchronizer, EntityDef, EntitySyncCallback, SynchronizerConfig, 
-  DBImplementation, EntityFetchCallback, HTTPResponseProcessor, HTTPRequest };
+export {
+  Synchronizer, EntityDef, EntitySyncCallback, SynchronizerConfig, buildSynchronizer,
+  DBImplementation, EntityFetchCallback, HTTPResponseProcessor, HTTPRequest
+};

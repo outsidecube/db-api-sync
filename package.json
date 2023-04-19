@@ -53,6 +53,7 @@
     "lib/**/*"
   ],
   "dependencies": {
+    "@babel/runtime": "^7.21.0",
     "jsonpath": "^1.1.1"
   }
 }

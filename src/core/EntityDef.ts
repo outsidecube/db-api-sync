@@ -4,6 +4,7 @@ import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { EntitySyncResults } from "./EntitySyncResults";
 import { SynchronizerConfig } from "../config/SynchronizerConfig";
 import { AbstractEntityFetcher } from "../fetcher/AbstractEntityFetcher";
+import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 
 
 export class EntityDef {
@@ -15,6 +16,8 @@ export class EntityDef {
 
   fetcher?: AbstractEntityFetcher;
 
+  localStorage?: EntityLocalStorage;
+  
   public fetchEntities(): EntitySyncResults {
     const results: EntitySyncResults = {
     };

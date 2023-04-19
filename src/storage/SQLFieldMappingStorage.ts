@@ -9,8 +9,8 @@ export type SQLFieldMappingStorageConfig = BaseSQLEntityStorageConfig & {
 export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
   mappings?: FieldMapping;
 
-  constructor(tablename: string, idFieldName: string, dbImplementation: DBImplementation, mappings: FieldMapping) {
-    super(tablename, idFieldName, dbImplementation);
+  constructor(tableName: string, idFieldName: string, dbImplementation: DBImplementation, mappings: FieldMapping) {
+    super(tableName, idFieldName, dbImplementation);
     this.mappings = mappings;
   }
 
@@ -41,13 +41,13 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     const placeholders = queryValues.map(() => `?`).join(", ");
 
     // Construct the SQL insert query
-    const query = `INSERT INTO ${this.tablename} (${columnNames}) VALUES (${placeholders});`;
+    const query = `INSERT INTO ${this.tableName} (${columnNames}) VALUES (${placeholders});`;
 
     return this.dbImplementation.executeSQL(query, queryValues);
   }
 
   getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]> {
-    const query = `select * from ${this.tablename} where ${fieldName}=?`;
+    const query = `select * from ${this.tableName} where ${fieldName}=?`;
     return this.dbImplementation.executeSQL(query, [value]);
   }
 

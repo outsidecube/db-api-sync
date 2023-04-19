@@ -1,5 +1,6 @@
 import { AuthHandler } from "../auth/AuthHandler";
 import { SynchronizerConfig } from "../config/SynchronizerConfig";
+import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { DBImplementation } from "../storage/DBImplementation";
 import { EntityDef } from "./EntityDef";
 import { EntitySyncCallback } from "./EntitySyncCallback";
@@ -18,11 +19,12 @@ export class Synchronizer {
 
   generalDBImplementation?: DBImplementation;
 
+  fetchRevisionHandlers: Map<string, FetchRevisionHandler>;
 
   constructor(config: SynchronizerConfig) {
     this.config = config;
     this.entityDefs = new Map<string, EntityDef>();
-
+    this.fetchRevisionHandlers = new Map<string, FetchRevisionHandler>();
   }
 
   public async fetchAll(callback: EntitySyncCallback) {
@@ -30,6 +32,7 @@ export class Synchronizer {
     callback?.onPercentageUpdate(0);
     let c = 0;
     for (const [, entity] of this.entityDefs) {
+      console.log("receiving entity", entity)
       callback?.onEntitySyncStarted(entity, SyncOperation.FETCH);
       // eslint-disable-next-line no-await-in-loop
       const results = await entity.fetchEntities()

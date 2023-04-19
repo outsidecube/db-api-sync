@@ -7,20 +7,20 @@ export type BaseSQLEntityStorageConfig= {
   dbImplementation: DBImplementation
 }
 export abstract class BaseSQLEntityStorage implements EntityLocalStorage {
-  tablename: string;
+  tableName: string;
 
   idFieldName: string
 
   dbImplementation: DBImplementation
 
   constructor(tableName: string, idFieldName: string, dbImplementation: DBImplementation) {
-    this.tablename = tableName;
+    this.tableName = tableName;
     this.idFieldName = idFieldName;
     this.dbImplementation = dbImplementation;
   }
 
   async getHighestFieldValue(fieldName: string): Promise<unknown> {
-    const query = `SELECT MAX(?) FROM ${this.tablename}`
+    const query = `SELECT MAX(?) FROM ${this.tableName}`
     return this.dbImplementation.executeSQL(query, [fieldName])
   }
   
