@@ -20,7 +20,7 @@ export class HTTPRequest {
 
   constructor(url: string) {
     this.url = url;
-    this.headers = {};
+    this.headers = new Headers();
     this.body = undefined;
     this.method = 'GET';
     this.queryParams = new URLSearchParams();
@@ -30,8 +30,7 @@ export class HTTPRequest {
   }
 
   public setHeader(name: string, value: string): void {
-    const headers = this.headers as Headers;
-    headers.append(name, value);
+    (this.headers as Headers).set(name, value);
   }
 
   public setBody(body: BodyInit): void {
@@ -59,6 +58,7 @@ export class HTTPRequest {
   }
 
   public async fetch(): Promise<Response> {
+
     const url = `${this.url}?${this.queryParams.toString()}`;
     const options: RequestInit & { [key: string]: unknown } = {
       headers: this.headers,
@@ -70,8 +70,13 @@ export class HTTPRequest {
     if (this.responseType !== undefined) {
       options.responseType = this.responseType;
     }
-    const response = await fetch(url, options);
+    try {
+      const response = await fetch(url, options);
 
-    return response;
+      return response;
+    } catch (e) {
+      console.error(`Error while executing fetch to ${url}. ${options}`)
+      throw e;
+    }
   }
 }
