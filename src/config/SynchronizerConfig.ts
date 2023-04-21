@@ -2,6 +2,7 @@ import { AuthHandler } from "../auth/AuthHandler"
 import { BearerAuthHandlerConfig } from "../auth/BearerAuthHandler";
 import { AbstractEntityFetcher } from "../fetcher/AbstractEntityFetcher"
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
+import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
 import { RESTEntityFetcherConfig } from "../fetcher/RESTEntityFetcher";
 import { TimestampFieldRevisionHandlerConfig } from "../fetcher/TimestampFieldRevisionHandler";
 import { DBImplementation } from "../storage/DBImplementation";
@@ -12,6 +13,7 @@ export type AuthHandlerType = "BearerAuthHandler" | AuthHandler;
 export type FetcherType = "RESTEntityFetcher" | AbstractEntityFetcher;
 export type EntityLocalStorageType = "SQLFieldMapping" | EntityLocalStorage;
 export type FetchRevisionHandlerType = "TimestampFieldRevisionHandler" | FetchRevisionHandler;
+export type Formatter = (input: unknown)=>unknown;
 export type EntityLocalStorageConfig = {
   entityLocalStorage: EntityLocalStorageType,
   config: SQLFieldMappingStorageConfig | unknown
@@ -39,10 +41,20 @@ export type FetchRevisionHandlerConfig = {
   revisionHandler?: FetchRevisionHandlerType,
   config: TimestampFieldRevisionHandlerConfig | unknown
 }
+export type FormatterConfig = {
+  name: string,
+  formatter: Formatter
+}
+export type HTTPResponseProcessorConfig = {
+  name: string,
+  httpResponseProcessor: HTTPResponseProcessor
+}
 export type SynchronizerConfig = {
   baseURI: string,
   entityDefs: Array<EntityDefConfig>,
   authorization: AuthorizationConfig,
   revisionHandlers: Array<FetchRevisionHandlerConfig>,
-  generalDBImplementation?: DBImplementation
+  formatters?: Array<FormatterConfig>,
+  httpResponseProcessors?: Array<HTTPResponseProcessorConfig>
+  globalDBImplementation?: DBImplementation,
 }

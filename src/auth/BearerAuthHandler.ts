@@ -14,6 +14,7 @@ export class BearerAuthHandler implements AuthHandler {
 
   async configureRequest(entityDef: EntityDef, req: HTTPRequest): Promise<void> {
     req.setHeader("Authorization", `Bearer ${this.token}`)
+    req.setHeader("Content-Type", "application/json")
   }
   
 }

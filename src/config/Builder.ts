@@ -4,11 +4,12 @@ import { EntityDef } from "../core/EntityDef";
 import { Synchronizer } from "../core/Synchronizer";
 import { AbstractEntityFetcher } from "../fetcher/AbstractEntityFetcher";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
+import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
 import { RESTEntityFetcher, RESTEntityFetcherConfig } from "../fetcher/RESTEntityFetcher";
 import { TimestampFieldRevisionHandler, TimestampFieldRevisionHandlerConfig } from "../fetcher/TimestampFieldRevisionHandler";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { SQLFieldMappingStorage, SQLFieldMappingStorageConfig } from "../storage/SQLFieldMappingStorage";
-import { AuthorizationConfig, EntityDefConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, SynchronizerConfig } from "./SynchronizerConfig";
+import { AuthorizationConfig, EntityDefConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPResponseProcessorConfig, SynchronizerConfig } from "./SynchronizerConfig";
 
 export function buildAuthHandler(authorization: AuthorizationConfig): AuthHandler {
   if (authorization.handler === "BearerAuthHandler") {
@@ -18,12 +19,23 @@ export function buildAuthHandler(authorization: AuthorizationConfig): AuthHandle
 
 }
 
-export function buildFetchRevisionHandler(fetchConfig: FetchRevisionHandlerConfig): FetchRevisionHandler {
+export function buildFetchRevisionHandler(fetchConfig: FetchRevisionHandlerConfig, synchronizer: Synchronizer): FetchRevisionHandler {
   let fetchRevisionHandler: FetchRevisionHandler;
   if (typeof fetchConfig.revisionHandler === 'string') {
     if (fetchConfig.revisionHandler === "TimestampFieldRevisionHandler") {
       const config: TimestampFieldRevisionHandlerConfig = fetchConfig.config as TimestampFieldRevisionHandlerConfig;
-      fetchRevisionHandler = new TimestampFieldRevisionHandler(config.timestampFieldName, config.timestampParameterName);
+      let formatter: Formatter | undefined;
+      if (config.parameterFormatter) {
+        if (typeof config.parameterFormatter === 'string') {
+          formatter = synchronizer.formatters.get(config.parameterFormatter)
+          if (!formatter) {
+            throw new Error(`Invalid formatter ${config.parameterFormatter}`)
+          }
+        } else {
+          formatter = config.parameterFormatter
+        }
+      }
+      fetchRevisionHandler = new TimestampFieldRevisionHandler(config.timestampFieldName, config.timestampParameterName, formatter);
     } else {
       throw new Error(`Invalid fetch revision handler type: ${fetchConfig.revisionHandler}`)
     }
@@ -42,9 +54,18 @@ export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchro
   if (typeof fetcherConfig.fetcher === 'string') {
     if (fetcherConfig.fetcher === "RESTEntityFetcher") {
       const config: RESTEntityFetcherConfig = fetcherConfig.config as RESTEntityFetcherConfig;
-      fetcher = new RESTEntityFetcher(config.uriPath, config.method, config.additionalQueryParams);
+      let httpResponseProcessor:HTTPResponseProcessor|undefined;
+      if (typeof config.responseProcessor ==='string' ) {
+        httpResponseProcessor = synchronizer.httpResponseProcessors.get(config.responseProcessor);
+      } else {
+        httpResponseProcessor = config.responseProcessor
+      }
+      if (!httpResponseProcessor) {
+        throw new Error(`No ResponseProcessor for fetcher ${JSON.stringify(fetcherConfig)}`)
+      }
+      fetcher = new RESTEntityFetcher(config.uriPath, httpResponseProcessor, config.method, config.additionalQueryParams);
     } else {
-      throw new Error(`Invalid fecther ${fetcherConfig.fetcher}`);
+      throw new Error(`Invalid fetcher ${fetcherConfig.fetcher}`);
     }
   } else if (fetcherConfig.fetcher instanceof AbstractEntityFetcher) {
     fetcher = fetcherConfig.fetcher;
@@ -60,7 +81,7 @@ export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchro
       }
     } else if (typeof fetcherConfig.revisionHandler === 'object') {
       try {
-        revisionHandler = buildFetchRevisionHandler(fetcherConfig.revisionHandler as FetchRevisionHandlerConfig);
+        revisionHandler = buildFetchRevisionHandler(fetcherConfig.revisionHandler as FetchRevisionHandlerConfig, synchronizer);
       } catch (e) {
         throw new Error(`Couldnt build FetchRevisionHandler for fetcher ${fetcherConfig}: ${e}`)
       }
@@ -75,7 +96,7 @@ export function buildEntityLocalStorage(config: EntityLocalStorageConfig, synchr
     if (config.entityLocalStorage === "SQLFieldMapping") {
       const sqlConfig: SQLFieldMappingStorageConfig = config.config as SQLFieldMappingStorageConfig;
       entityLocalStorage = new SQLFieldMappingStorage(sqlConfig.tableName, sqlConfig.idFieldName,
-        sqlConfig.dbImplementation || synchronizer.generalDBImplementation, sqlConfig.mappings)
+        sqlConfig.dbImplementation || synchronizer.globalDBImplementation, sqlConfig.mappings)
     } else {
       throw new Error(`Invalid EntityLocalStorage ${config.entityLocalStorage}`)
     }
@@ -86,9 +107,9 @@ export function buildEntityLocalStorage(config: EntityLocalStorageConfig, synchr
   }
   return entityLocalStorage;
 }
-export function buildEntityDefs(entityDefConfigs: EntityDefConfig[], synchronizer: Synchronizer): Map<string, EntityDef> {
+export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchronizer): Map<string, EntityDef> {
   const entityDefs = new Map<string, EntityDef>();
-  entityDefConfigs.forEach(e => {
+  config.entityDefs.forEach(e => {
     const entityDef = new EntityDef();
     if (e.authorization) {
       entityDef.authHandler = buildAuthHandler(e.authorization)
@@ -97,15 +118,16 @@ export function buildEntityDefs(entityDefConfigs: EntityDefConfig[], synchronize
     }
     entityDef.fetcher = buildFetcher(e.fetcher, synchronizer);
     entityDef.localStorage = buildEntityLocalStorage(e.localStorage, synchronizer);
+    entityDef.config = config;
     entityDefs.set(e.name, entityDef);
   })
   return entityDefs;
 }
 
-function buildFetchRevisionHandlers(revisionHandlers: FetchRevisionHandlerConfig[]): Map<string, FetchRevisionHandler> {
+function buildFetchRevisionHandlers(revisionHandlers: FetchRevisionHandlerConfig[], synchronizer: Synchronizer): Map<string, FetchRevisionHandler> {
   const m = new Map<string, FetchRevisionHandler>()
   revisionHandlers.forEach(fetchConfig => {
-    const fetchHandler: FetchRevisionHandler = buildFetchRevisionHandler(fetchConfig);
+    const fetchHandler: FetchRevisionHandler = buildFetchRevisionHandler(fetchConfig, synchronizer);
     if (!fetchConfig.name) {
       throw new Error(`Invalid fetcher revision handler config without name ${fetchConfig}`)
     }
@@ -114,12 +136,34 @@ function buildFetchRevisionHandlers(revisionHandlers: FetchRevisionHandlerConfig
   return m;
 }
 
+function buildFormatters(formatters: FormatterConfig[]): Map<string, Formatter> {
+  const m = new Map<string, Formatter>();
+  formatters.forEach(formatterConfig => {
+    m.set(formatterConfig.name, formatterConfig.formatter);
+  })
+  return m;
+}
+
+function buildHTTPResponseProcessors(httpResponseProcessors: HTTPResponseProcessorConfig[]): Map<string, HTTPResponseProcessor> {
+  const m = new Map<string, HTTPResponseProcessor>();
+  httpResponseProcessors.forEach(httpResponseProcessorConfig => {
+    m.set(httpResponseProcessorConfig.name, httpResponseProcessorConfig.httpResponseProcessor);
+  })
+  return m;
+}
+
 export function buildSynchronizer(config: SynchronizerConfig): Synchronizer {
   const synchronizer = new Synchronizer(config);
   synchronizer.authHandler = buildAuthHandler(config.authorization);
-  synchronizer.generalDBImplementation = config.generalDBImplementation;
-  synchronizer.fetchRevisionHandlers = buildFetchRevisionHandlers(config.revisionHandlers);
-  const entityDefs = buildEntityDefs(config.entityDefs, synchronizer);
+  synchronizer.globalDBImplementation = config.globalDBImplementation;
+  if (config.formatters) {
+    synchronizer.formatters = buildFormatters(config.formatters)
+  }
+  if (config.httpResponseProcessors) {
+    synchronizer.httpResponseProcessors = buildHTTPResponseProcessors(config.httpResponseProcessors)
+  }
+  synchronizer.fetchRevisionHandlers = buildFetchRevisionHandlers(config.revisionHandlers, synchronizer);
+  const entityDefs = buildEntityDefs(config, synchronizer);
   synchronizer.entityDefs = entityDefs;
   return synchronizer;
 }

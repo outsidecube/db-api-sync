@@ -1,10 +1,12 @@
+import { Formatter } from "../config/SynchronizerConfig";
 import { EntityDef } from "../core/EntityDef";
 import { HTTPRequest } from "../request/HTTPRequest";
 import { FetchRevisionHandler } from "./FetchRevisionHandler";
 
 export type TimestampFieldRevisionHandlerConfig = {
   timestampFieldName: string,
-  timestampParameterName: string
+  timestampParameterName: string,
+  parameterFormatter?: string | Formatter
 }
 /**
  * FetchRevisionHandler that uses a timestamp in the following way:
@@ -17,16 +19,20 @@ export class TimestampFieldRevisionHandler extends FetchRevisionHandler {
 
   timestampParameterName: string;
 
-  constructor(timestampFieldName: string, timestampParameterName: string) {
+  parameterFormatter?: Formatter;
+
+  constructor(timestampFieldName: string, timestampParameterName: string, parameterFormatter?: Formatter) {
     super()
     this.timestampFieldName = timestampFieldName;
     this.timestampParameterName = timestampParameterName;
+    this.parameterFormatter = parameterFormatter
   }
 
   async configureRequest(entity: EntityDef, req: HTTPRequest): Promise<void> {
-    if (!entity.localStorage) throw new Error(`Cannot retrieve timestamp without localStorage defined for entity ${  entity}`);
+    if (!entity.localStorage) throw new Error(`Cannot retrieve timestamp without localStorage defined for entity ${entity}`);
     const value: unknown = await entity.localStorage.getHighestFieldValue(this.timestampFieldName);
-    req.setQueryParams(this.timestampParameterName, value as string);
+    const paramValue = this.parameterFormatter ? this.parameterFormatter(value): value;
+    req.setQueryParams(this.timestampParameterName, paramValue as string);
   }
-  
+
 }

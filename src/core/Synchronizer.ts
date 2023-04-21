@@ -1,6 +1,7 @@
 import { AuthHandler } from "../auth/AuthHandler";
-import { SynchronizerConfig } from "../config/SynchronizerConfig";
+import { Formatter, SynchronizerConfig } from "../config/SynchronizerConfig";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
+import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
 import { DBImplementation } from "../storage/DBImplementation";
 import { EntityDef } from "./EntityDef";
 import { EntitySyncCallback } from "./EntitySyncCallback";
@@ -17,21 +18,38 @@ export class Synchronizer {
 
   authHandler?: AuthHandler
 
-  generalDBImplementation?: DBImplementation;
+  globalDBImplementation?: DBImplementation;
 
   fetchRevisionHandlers: Map<string, FetchRevisionHandler>;
+
+  formatters: Map<string, Formatter>;
+
+  httpResponseProcessors: Map<string, HTTPResponseProcessor>;
 
   constructor(config: SynchronizerConfig) {
     this.config = config;
     this.entityDefs = new Map<string, EntityDef>();
     this.fetchRevisionHandlers = new Map<string, FetchRevisionHandler>();
+    this.formatters = new Map<string, Formatter>();
+    this.httpResponseProcessors = new Map<string, HTTPResponseProcessor>();
+
+  }
+
+  private filterEntityDefs(fn: (e: EntityDef) => boolean | undefined): Array<EntityDef> {
+    const r: Array<EntityDef> = [];
+    this.entityDefs.forEach((entityDef) => {
+      if (fn(entityDef)) r.push(entityDef)
+    })
+    return r;
   }
 
   public async fetchAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.size;
+    const entities = this.filterEntityDefs(e => e.fetchable);
+    const totalCount = entities.length;
+    if (!totalCount) return;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const [, entity] of this.entityDefs) {
+    for (const entity of entities) {
       console.log("receiving entity", entity)
       callback?.onEntitySyncStarted(entity, SyncOperation.FETCH);
       // eslint-disable-next-line no-await-in-loop
@@ -43,10 +61,12 @@ export class Synchronizer {
   }
 
   public async sendAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.size;
+    const entities = this.filterEntityDefs(e => e.sendable);
+    const totalCount = entities.length;
+    if (!totalCount) return;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const [, entity] of this.entityDefs) {
+    for (const entity of entities) {
 
       callback?.onEntitySyncStarted(entity, SyncOperation.SEND);
       // eslint-disable-next-line no-await-in-loop
@@ -58,10 +78,12 @@ export class Synchronizer {
   }
 
   public async deleteAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.size;
+    const entities = this.filterEntityDefs(e => e.deletable);
+    const totalCount = entities.length;
+    if (!totalCount) return;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const [, entity] of this.entityDefs) {
+    for (const entity of entities) {
       callback?.onEntitySyncStarted(entity, SyncOperation.DELETE);
       // eslint-disable-next-line no-await-in-loop
       const results = await entity.deleteEntities();

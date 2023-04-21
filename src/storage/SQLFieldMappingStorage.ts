@@ -1,5 +1,6 @@
 import { BaseSQLEntityStorage, BaseSQLEntityStorageConfig } from "./BaseSQLEntityStorage";
 import { DBImplementation } from "./DBImplementation";
+import { SaveResult } from "./EntityLocalStorage";
 
 export type FieldMapping = { [key: string]: string | ((row: unknown) => unknown) }
 export type SQLFieldMappingStorageConfig = BaseSQLEntityStorageConfig & {
@@ -14,26 +15,79 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     this.mappings = mappings;
   }
 
-  saveEntity(rawEntityObject: unknown): Promise<void> {
+  getValueForColumn(column: string, rawEntityObject: unknown) {
+    const mapping = this.mappings ? this.mappings[column] : null;
+    let value: unknown;
+    if (typeof mapping === "string") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = (rawEntityObject as any)[mapping];
+    } else if (typeof mapping === "function") {
+      value = mapping(rawEntityObject);
+    }
+    return value;
+  }
+
+  async saveEntity(rawEntityObject: unknown): Promise<SaveResult> {
+
+    const idAttribute = this.getValueForColumn(this.idFieldName, rawEntityObject);
+    if (!idAttribute) {
+      throw new Error(`Cannot determine id for object ${rawEntityObject}. Trying to access ${this.idFieldName} mapped object`);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existing: any = await this.getEntitiesByField(this.idFieldName, idAttribute);
+    if (existing && existing.rows.length) {
+      await this.updateEntity(idAttribute, rawEntityObject);
+      return {
+        updated: true,
+        inserted: false
+      }
+    } 
+      await this.insertEntity(rawEntityObject);
+      return {
+        updated: false,
+        inserted: true
+      }
+    
+
+  }
+
+  getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]> {
+    const query = `select * from ${this.tableName} where ${fieldName}=?`;
+    return this.dbImplementation.executeSQL(query, [value]);
+  }
+
+
+  updateEntity(id: unknown, rawEntityObject: unknown) {
+
     const queryColumns: string[] = [];
     const queryValues: unknown[] = [];
+    for (const column in this.mappings) {
+      if (Object.prototype.hasOwnProperty.call(this.mappings, column)) {
+        if (column !== this.idFieldName) {
 
+          queryColumns.push(`${column} = ?`);
+          queryValues.push(this.getValueForColumn(column, rawEntityObject));
+        }
+      }
+    }
+
+    const columnNames = queryColumns.join(", ");
+    
+    queryValues.push(id)
+    // Construct the SQL insert query
+    const query = `UPDATE ${this.tableName} SET ${columnNames} WHERE ${this.idFieldName} = ?;`;
+
+    return this.dbImplementation.executeSQL(query, queryValues);
+  }
+
+  insertEntity(rawEntityObject: unknown) {
+    const queryColumns: string[] = [];
+    const queryValues: unknown[] = [];
     for (const column in this.mappings) {
       if (Object.prototype.hasOwnProperty.call(this.mappings, column)) {
 
-        const mapping = this.mappings[column];
-
-        // Calculate value based on the mapping
-        let value: unknown;
-        if (typeof mapping === "string") {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value = (rawEntityObject as any)[mapping];
-        } else if (typeof mapping === "function") {
-          value = mapping(rawEntityObject);
-        }
-
         queryColumns.push(column);
-        queryValues.push(value);
+        queryValues.push(this.getValueForColumn(column, rawEntityObject));
       }
     }
 
@@ -46,9 +100,6 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     return this.dbImplementation.executeSQL(query, queryValues);
   }
 
-  getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]> {
-    const query = `select * from ${this.tableName} where ${fieldName}=?`;
-    return this.dbImplementation.executeSQL(query, [value]);
-  }
 
 }
+
