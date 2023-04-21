@@ -107,9 +107,9 @@ export function buildEntityLocalStorage(config: EntityLocalStorageConfig, synchr
   }
   return entityLocalStorage;
 }
-export function buildEntityDefs(entityDefConfigs: EntityDefConfig[], synchronizer: Synchronizer): Map<string, EntityDef> {
+export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchronizer): Map<string, EntityDef> {
   const entityDefs = new Map<string, EntityDef>();
-  entityDefConfigs.forEach(e => {
+  config.entityDefs.forEach(e => {
     const entityDef = new EntityDef();
     if (e.authorization) {
       entityDef.authHandler = buildAuthHandler(e.authorization)
@@ -118,6 +118,7 @@ export function buildEntityDefs(entityDefConfigs: EntityDefConfig[], synchronize
     }
     entityDef.fetcher = buildFetcher(e.fetcher, synchronizer);
     entityDef.localStorage = buildEntityLocalStorage(e.localStorage, synchronizer);
+    entityDef.config = config;
     entityDefs.set(e.name, entityDef);
   })
   return entityDefs;
@@ -162,7 +163,7 @@ export function buildSynchronizer(config: SynchronizerConfig): Synchronizer {
     synchronizer.httpResponseProcessors = buildHTTPResponseProcessors(config.httpResponseProcessors)
   }
   synchronizer.fetchRevisionHandlers = buildFetchRevisionHandlers(config.revisionHandlers, synchronizer);
-  const entityDefs = buildEntityDefs(config.entityDefs, synchronizer);
+  const entityDefs = buildEntityDefs(config, synchronizer);
   synchronizer.entityDefs = entityDefs;
   return synchronizer;
 }
