@@ -24,6 +24,8 @@ export class EntityDef {
 
   deletable?: boolean;
 
+  name?: string
+
   private buildResults(): EntitySyncResults {
     return {
       insertedCount: 0,

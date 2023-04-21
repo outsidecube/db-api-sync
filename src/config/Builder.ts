@@ -119,6 +119,10 @@ export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchr
     entityDef.fetcher = buildFetcher(e.fetcher, synchronizer);
     entityDef.localStorage = buildEntityLocalStorage(e.localStorage, synchronizer);
     entityDef.config = config;
+    entityDef.name = e.name;
+    entityDef.sendable = e.sendable;
+    entityDef.fetchable = e.fetchable;
+    entityDef.deletable = e.deletable;
     entityDefs.set(e.name, entityDef);
   })
   return entityDefs;

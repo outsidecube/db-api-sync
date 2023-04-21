@@ -50,7 +50,6 @@ export class Synchronizer {
     callback?.onPercentageUpdate(0);
     let c = 0;
     for (const entity of entities) {
-      console.log("receiving entity", entity)
       callback?.onEntitySyncStarted(entity, SyncOperation.FETCH);
       // eslint-disable-next-line no-await-in-loop
       const results = await entity.fetchEntities()

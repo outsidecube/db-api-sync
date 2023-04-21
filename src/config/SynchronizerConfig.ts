@@ -13,7 +13,7 @@ export type AuthHandlerType = "BearerAuthHandler" | AuthHandler;
 export type FetcherType = "RESTEntityFetcher" | AbstractEntityFetcher;
 export type EntityLocalStorageType = "SQLFieldMapping" | EntityLocalStorage;
 export type FetchRevisionHandlerType = "TimestampFieldRevisionHandler" | FetchRevisionHandler;
-export type Formatter = (input: unknown)=>unknown;
+export type Formatter = (input: unknown) => unknown;
 export type EntityLocalStorageConfig = {
   entityLocalStorage: EntityLocalStorageType,
   config: SQLFieldMappingStorageConfig | unknown
@@ -29,6 +29,9 @@ export type FetcherConfig = {
 export type EntityDefConfig = {
   fetcher: FetcherConfig,
   name: string,
+  sendable?: boolean,
+  fetchable?: boolean,
+  deletable?: boolean,
   authorization?: AuthorizationConfig,
   localStorage: EntityLocalStorageConfig
 }
