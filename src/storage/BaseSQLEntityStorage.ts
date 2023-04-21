@@ -1,5 +1,5 @@
 import { DBImplementation } from "./DBImplementation";
-import { EntityLocalStorage } from "./EntityLocalStorage";
+import { EntityLocalStorage, SaveResult } from "./EntityLocalStorage";
 
 export type BaseSQLEntityStorageConfig= {
   tableName: string;
@@ -26,5 +26,5 @@ export abstract class BaseSQLEntityStorage implements EntityLocalStorage {
   
   abstract getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]>;
 
-  abstract saveEntity(rawEntityObject: unknown): Promise<void>;
+  abstract saveEntity(rawEntityObject: unknown): Promise<SaveResult>;
 }
