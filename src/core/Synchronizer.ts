@@ -35,11 +35,21 @@ export class Synchronizer {
 
   }
 
+  private filterEntityDefs(fn: (e: EntityDef) => boolean | undefined): Array<EntityDef> {
+    const r: Array<EntityDef> = [];
+    this.entityDefs.forEach((entityDef) => {
+      if (fn(entityDef)) r.push(entityDef)
+    })
+    return r;
+  }
+
   public async fetchAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.size;
+    const entities = this.filterEntityDefs(e => e.fetchable);
+    const totalCount = entities.length;
+    if (!totalCount) return;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const [, entity] of this.entityDefs) {
+    for (const entity of entities) {
       console.log("receiving entity", entity)
       callback?.onEntitySyncStarted(entity, SyncOperation.FETCH);
       // eslint-disable-next-line no-await-in-loop
@@ -51,10 +61,12 @@ export class Synchronizer {
   }
 
   public async sendAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.size;
+    const entities = this.filterEntityDefs(e => e.sendable);
+    const totalCount = entities.length;
+    if (!totalCount) return;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const [, entity] of this.entityDefs) {
+    for (const entity of entities) {
 
       callback?.onEntitySyncStarted(entity, SyncOperation.SEND);
       // eslint-disable-next-line no-await-in-loop
@@ -66,10 +78,12 @@ export class Synchronizer {
   }
 
   public async deleteAll(callback: EntitySyncCallback) {
-    const totalCount = this.entityDefs.size;
+    const entities = this.filterEntityDefs(e => e.deletable);
+    const totalCount = entities.length;
+    if (!totalCount) return;
     callback?.onPercentageUpdate(0);
     let c = 0;
-    for (const [, entity] of this.entityDefs) {
+    for (const entity of entities) {
       callback?.onEntitySyncStarted(entity, SyncOperation.DELETE);
       // eslint-disable-next-line no-await-in-loop
       const results = await entity.deleteEntities();
