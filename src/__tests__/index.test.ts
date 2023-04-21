@@ -1,7 +1,7 @@
 import { EntityDef, Synchronizer, SynchronizerConfig, buildSynchronizer } from '../index';
 import { EntityLocalStorage } from '../storage/EntityLocalStorage';
 import { SQLFieldMappingStorage } from '../storage/SQLFieldMappingStorage';
-import { MockDBImplementation } from './helper/MockDBImplementation';
+import { MockDBImplementation, MockResponseProcessor } from './helper/MockImplementation';
 
 describe('valid EntityDefBuilder', () => {
   let synchronizer: Synchronizer;
@@ -16,6 +16,10 @@ describe('valid EntityDefBuilder', () => {
         },
       },
       globalDBImplementation: new MockDBImplementation(),
+      httpResponseProcessors: [{
+        name: 'mockResponseProcessor',
+        httpResponseProcessor: new MockResponseProcessor()
+      }],
       revisionHandlers: [
         {
           name: 'timestampHandler',
@@ -47,6 +51,7 @@ describe('valid EntityDefBuilder', () => {
             revisionHandler: 'timestampHandler',
             config: {
               uriPath: '/users',
+              responseProcessor: 'mockResponseProcessor'
             },
           },
         },
