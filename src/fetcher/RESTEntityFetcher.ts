@@ -29,7 +29,7 @@ export class RESTEntityFetcher implements AbstractEntityFetcher {
 
   public async retrieveEntities(callback: EntityFetchCallback, entityDef: EntityDef): Promise<void> {
     const req: HTTPRequest = this.createRequest(entityDef);
-    this.responseProcessor.readEntities(callback, entityDef, req);
+    return this.responseProcessor.readEntities(callback, entityDef, req);
   }
 
   createRequest(entityDef: EntityDef): HTTPRequest {
