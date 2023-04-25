@@ -1,81 +1,57 @@
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+
+export type HTTPResponse = {
+  data?: any,
+  status?: number,
+  statusText?: string
+};
 /**
- * class that represents a request to an HTTP service. The base implementation is built around standard `fetch` API
+ * class that represents a request to an HTTP service. The base implementation is built around standard `axios` API
  */
 export class HTTPRequest {
-  private url: string;
-
-  private headers: HeadersInit;
-
-  private body: BodyInit | undefined;
-
-  private method: string;
-
-  private queryParams: URLSearchParams;
-
-  private credentials: RequestCredentials | undefined;
-
-  private responseType: ResponseType | undefined;
-
-  private cache: RequestCache | undefined;
+  private config: AxiosRequestConfig = {};
 
   constructor(url: string) {
-    this.url = url;
-    this.headers = new Headers();
-    this.body = undefined;
-    this.method = 'GET';
-    this.queryParams = new URLSearchParams();
-    this.credentials = undefined;
-    this.responseType = undefined;
-    this.cache = undefined;
+    this.config.url = url
+  }
+
+  public get url():string | undefined{
+    return this.config.url;
   }
 
   public setHeader(name: string, value: string): void {
-    (this.headers as Headers).set(name, value);
+    if (!this.config.headers) {
+      this.config.headers = {};
+    }
+    this.config.headers[name] = value;
   }
 
-  public setBody(body: BodyInit): void {
-    this.body = body;
+  public getHeader(name: string): string|undefined {
+    return this.config.headers?.[name];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public setBody(body: any): void {
+    this.config.data = body;
   }
 
   public setMethod(method: string): void {
-    this.method = method;
+    this.config.method = method;
   }
 
   public setQueryParams(name: string, value: string): void {
-    this.queryParams.set(name, value);
-  }
-
-  public setCredentials(credentials: RequestCredentials): void {
-    this.credentials = credentials;
-  }
-
-  public setResponseType(responseType: ResponseType): void {
-    this.responseType = responseType;
-  }
-
-  public setCache(cache: RequestCache): void {
-    this.cache = cache;
-  }
-
-  public async fetch(): Promise<Response> {
-
-    const url = `${this.url}?${this.queryParams.toString()}`;
-    const options: RequestInit & { [key: string]: unknown } = {
-      headers: this.headers,
-      method: this.method,
-      body: this.body,
-      credentials: this.credentials,
-      cache: this.cache
-    };
-    if (this.responseType !== undefined) {
-      options.responseType = this.responseType;
+    if (!this.config.params) {
+      this.config.params = {};
     }
-    try {
-      const response = await fetch(url, options);
+    this.config.params[name] = value;
+  }
 
+  public async fetch(): Promise<HTTPResponse> {
+    try {
+      const response = await axios(this.config);
       return response;
     } catch (e) {
-      console.error(`Error while executing fetch to ${url}. ${options}`)
+      console.error(`Error while executing fetch to ${this.config}.`)
       throw e;
     }
   }
