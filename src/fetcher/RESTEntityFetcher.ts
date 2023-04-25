@@ -28,15 +28,15 @@ export class RESTEntityFetcher implements AbstractEntityFetcher {
   }
 
   public async retrieveEntities(callback: EntityFetchCallback, entityDef: EntityDef): Promise<void> {
-    const req: HTTPRequest = this.createRequest(entityDef);
+    const req: HTTPRequest = await this.createRequest(entityDef);
     return this.responseProcessor.readEntities(callback, entityDef, req);
   }
 
-  createRequest(entityDef: EntityDef): HTTPRequest {
+  async createRequest(entityDef: EntityDef): Promise<HTTPRequest> {
     const req = new HTTPRequest(`${entityDef.config?.baseURI}${this.uriPath}`)
     req.setMethod(this.method);
-    entityDef.authHandler?.configureRequest(entityDef, req);
-    entityDef.fetchRevisionHandler?.configureRequest(entityDef, req);
+    await entityDef.authHandler?.configureRequest(entityDef, req);
+    await entityDef.fetchRevisionHandler?.configureRequest(entityDef, req);
     for (const key in this.additionalQueryParams) {
       if (Object.prototype.hasOwnProperty.call(this.additionalQueryParams, key) ) {
         req.setQueryParams(key, this.additionalQueryParams[key])

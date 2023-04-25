@@ -43,7 +43,7 @@ export class Synchronizer {
     return r;
   }
 
-  public async fetchAll(callback: EntitySyncCallback) {
+  public async fetchAll(callback?: EntitySyncCallback) {
     const entities = this.filterEntityDefs(e => e.fetchable);
     const totalCount = entities.length;
     if (!totalCount) return;
@@ -59,7 +59,7 @@ export class Synchronizer {
     }
   }
 
-  public async sendAll(callback: EntitySyncCallback) {
+  public async sendAll(callback?: EntitySyncCallback) {
     const entities = this.filterEntityDefs(e => e.sendable);
     const totalCount = entities.length;
     if (!totalCount) return;
@@ -76,7 +76,7 @@ export class Synchronizer {
     }
   }
 
-  public async deleteAll(callback: EntitySyncCallback) {
+  public async deleteAll(callback?: EntitySyncCallback) {
     const entities = this.filterEntityDefs(e => e.deletable);
     const totalCount = entities.length;
     if (!totalCount) return;
