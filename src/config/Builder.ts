@@ -9,7 +9,7 @@ import { RESTEntityFetcher, RESTEntityFetcherConfig } from "../fetcher/RESTEntit
 import { TimestampFieldRevisionHandler, TimestampFieldRevisionHandlerConfig } from "../fetcher/TimestampFieldRevisionHandler";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { SQLFieldMappingStorage, SQLFieldMappingStorageConfig } from "../storage/SQLFieldMappingStorage";
-import { AuthorizationConfig, EntityDefConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPResponseProcessorConfig, SynchronizerConfig } from "./SynchronizerConfig";
+import { AuthorizationConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPResponseProcessorConfig, SynchronizerConfig } from "./SynchronizerConfig";
 
 export function buildAuthHandler(authorization: AuthorizationConfig): AuthHandler {
   if (authorization.handler === "BearerAuthHandler") {
@@ -54,8 +54,8 @@ export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchro
   if (typeof fetcherConfig.fetcher === 'string') {
     if (fetcherConfig.fetcher === "RESTEntityFetcher") {
       const config: RESTEntityFetcherConfig = fetcherConfig.config as RESTEntityFetcherConfig;
-      let httpResponseProcessor:HTTPResponseProcessor|undefined;
-      if (typeof config.responseProcessor ==='string' ) {
+      let httpResponseProcessor: HTTPResponseProcessor | undefined;
+      if (typeof config.responseProcessor === 'string') {
         httpResponseProcessor = synchronizer.httpResponseProcessors.get(config.responseProcessor);
       } else {
         httpResponseProcessor = config.responseProcessor
