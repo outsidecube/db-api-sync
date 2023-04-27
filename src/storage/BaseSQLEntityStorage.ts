@@ -1,7 +1,7 @@
 import { DBImplementation } from "./DBImplementation";
 import { EntityLocalStorage, SaveResult } from "./EntityLocalStorage";
 
-export type BaseSQLEntityStorageConfig= {
+export type BaseSQLEntityStorageConfig = {
   tableName: string;
   idFieldName: string;
   dbImplementation: DBImplementation
@@ -20,10 +20,15 @@ export abstract class BaseSQLEntityStorage implements EntityLocalStorage {
   }
 
   async getHighestFieldValue(fieldName: string): Promise<unknown> {
-    const query = `SELECT MAX(?) FROM ${this.tableName}`
-    return this.dbImplementation.executeSQL(query, [fieldName])
+    const query = `SELECT MAX(${fieldName}) as MVALUE FROM ${this.tableName}`
+    const resp = await this.dbImplementation.executeSQL(query, []);
+    if (resp.rows.length === 0) {
+      return null;
+    }
+    return resp.rows.item(0).MVALUE;
+
   }
-  
+
   abstract getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]>;
 
   abstract saveEntity(rawEntityObject: unknown): Promise<SaveResult>;

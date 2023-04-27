@@ -1,6 +1,7 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 export type HTTPResponse = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any,
   status?: number,
   statusText?: string
