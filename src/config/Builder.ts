@@ -72,21 +72,7 @@ export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchro
   } else {
     throw new Error(`Invalid fecther ${fetcherConfig.fetcher}`);
   }
-  if (fetcherConfig.revisionHandler) {
-    let revisionHandler: FetchRevisionHandler | undefined;
-    if (typeof fetcherConfig.revisionHandler === 'string') {
-      revisionHandler = synchronizer.fetchRevisionHandlers.get(fetcherConfig.revisionHandler);
-      if (!revisionHandler) {
-        throw new Error(`No FetchRevisionHandler found for name ${fetcherConfig.revisionHandler}`)
-      }
-    } else if (typeof fetcherConfig.revisionHandler === 'object') {
-      try {
-        revisionHandler = buildFetchRevisionHandler(fetcherConfig.revisionHandler as FetchRevisionHandlerConfig, synchronizer);
-      } catch (e) {
-        throw new Error(`Couldnt build FetchRevisionHandler for fetcher ${fetcherConfig}: ${e}`)
-      }
-    }
-  }
+ 
   return fetcher;
 }
 
@@ -96,7 +82,8 @@ export function buildEntityLocalStorage(config: EntityLocalStorageConfig, synchr
     if (config.entityLocalStorage === "SQLFieldMapping") {
       const sqlConfig: SQLFieldMappingStorageConfig = config.config as SQLFieldMappingStorageConfig;
       entityLocalStorage = new SQLFieldMappingStorage(sqlConfig.tableName, sqlConfig.idFieldName,
-        sqlConfig.dbImplementation || synchronizer.globalDBImplementation, sqlConfig.mappings)
+        sqlConfig.dbImplementation || synchronizer.globalDBImplementation, sqlConfig.mappings, sqlConfig.preProcessor)
+      
     } else {
       throw new Error(`Invalid EntityLocalStorage ${config.entityLocalStorage}`)
     }
@@ -118,6 +105,22 @@ export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchr
     }
     entityDef.fetcher = buildFetcher(e.fetcher, synchronizer);
     entityDef.localStorage = buildEntityLocalStorage(e.localStorage, synchronizer);
+    if (e.revisionHandler) {
+      let revisionHandler: FetchRevisionHandler | undefined;
+      if (typeof e.revisionHandler === 'string') {
+        revisionHandler = synchronizer.fetchRevisionHandlers.get(e.revisionHandler);
+        if (!revisionHandler) {
+          throw new Error(`No FetchRevisionHandler found for name ${e.revisionHandler}`)
+        }
+      } else if (typeof e.revisionHandler === 'object') {
+        try {
+          revisionHandler = buildFetchRevisionHandler(e.revisionHandler as FetchRevisionHandlerConfig, synchronizer);
+        } catch (err) {
+          throw new Error(`Couldnt build FetchRevisionHandler for EntityDef ${e}: ${err}`)
+        }
+      }
+      entityDef.fetchRevisionHandler = revisionHandler;
+    }
     entityDef.config = config;
     entityDef.name = e.name;
     entityDef.sendable = e.sendable;

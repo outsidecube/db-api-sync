@@ -20,10 +20,6 @@ export type EntityLocalStorageConfig = {
 }
 export type FetcherConfig = {
   fetcher: FetcherType,
-  /**
-   * The name of the Fetch Revision Handler defined globally. It can also be a entire definition of a specific FetchRevisionHandler
-   */
-  revisionHandler: string | FetchRevisionHandlerConfig,
   config: RESTEntityFetcherConfig | unknown
 }
 export type EntityDefConfig = {
@@ -33,6 +29,10 @@ export type EntityDefConfig = {
   fetchable?: boolean,
   deletable?: boolean,
   authorization?: AuthorizationConfig,
+  /**
+ * The name of the Fetch Revision Handler defined globally. It can also be a entire definition of a specific FetchRevisionHandler
+ */
+  revisionHandler?: string | FetchRevisionHandlerConfig,
   localStorage: EntityLocalStorageConfig
 }
 export type AuthorizationConfig = {
