@@ -35,6 +35,7 @@ describe('valid EntityDefBuilder', () => {
         {
           name: 'User',
           fetchable: true,
+          revisionHandler: 'timestampHandler',
           localStorage: {
             entityLocalStorage: 'SQLFieldMapping',
             config: {
@@ -50,7 +51,6 @@ describe('valid EntityDefBuilder', () => {
           },
           fetcher: {
             fetcher: 'RESTEntityFetcher',
-            revisionHandler: 'timestampHandler',
             config: {
               uriPath: '/users',
               responseProcessor: 'mockResponseProcessor'
