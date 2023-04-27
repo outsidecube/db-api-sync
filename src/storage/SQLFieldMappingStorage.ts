@@ -61,11 +61,11 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     return this.dbImplementation.executeSQL(query, [value]);
   }
 
-  protected buildObjectMap(rawEntityObject: unknown) {
+  protected buildObjectMap(rawEntityObject: unknown, excludeId?:boolean) {
     const map = new Map<string, unknown>();
     for (const column in this.mappings) {
       if (Object.prototype.hasOwnProperty.call(this.mappings, column)) {
-        if (column !== this.idFieldName) {
+        if (!excludeId || (column !== this.idFieldName)) {
           map.set(column, this.getValueForColumn(column, rawEntityObject));
         }
       }
@@ -77,7 +77,7 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
 
     const queryColumns: string[] = [];
     const queryValues: unknown[] = [];
-    const objectMap = this.buildObjectMap(rawEntityObject);
+    const objectMap = this.buildObjectMap(rawEntityObject, true);
     if (this.preProcessor) {
       this.preProcessor(objectMap, rawEntityObject);
     }
