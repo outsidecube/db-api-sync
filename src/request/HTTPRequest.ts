@@ -4,7 +4,9 @@ export type HTTPResponse = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any,
   status?: number,
-  statusText?: string
+  statusText?: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  headers?: any
 };
 /**
  * class that represents a request to an HTTP service. The base implementation is built around standard `axios` API
@@ -16,7 +18,7 @@ export class HTTPRequest {
     this.config.url = url
   }
 
-  public get url():string | undefined{
+  public get url(): string | undefined {
     return this.config.url;
   }
 
@@ -27,7 +29,7 @@ export class HTTPRequest {
     this.config.headers[name] = value;
   }
 
-  public getHeader(name: string): string|undefined {
+  public getHeader(name: string): string | undefined {
     return this.config.headers?.[name];
   }
 
@@ -52,8 +54,7 @@ export class HTTPRequest {
       const response = await axios(this.config);
       return response;
     } catch (e) {
-      console.error(`Error while executing fetch to ${this.config}.`)
-      throw e;
+      throw new Error(`Error while executing fetch to ${this.config}.`);
     }
   }
 }
