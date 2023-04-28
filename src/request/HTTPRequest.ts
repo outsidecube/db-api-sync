@@ -22,6 +22,16 @@ export class HTTPRequest {
     return this.config.url;
   }
 
+  public set url(s: string | undefined) {
+    this.config.url = s;
+  }
+
+  public clone(): HTTPRequest {
+    const copy = new HTTPRequest(this.config.url || "");
+    copy.config = { ...this.config };
+    return copy;
+  }
+
   public setHeader(name: string, value: string): void {
     if (!this.config.headers) {
       this.config.headers = {};
