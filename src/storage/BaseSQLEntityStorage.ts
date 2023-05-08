@@ -3,17 +3,17 @@ import { EntityLocalStorage, SaveResult } from "./EntityLocalStorage";
 
 export type BaseSQLEntityStorageConfig = {
   tableName: string;
-  idFieldName: string;
+  idFieldName: string | [];
   dbImplementation: DBImplementation
 }
 export abstract class BaseSQLEntityStorage implements EntityLocalStorage {
   tableName: string;
 
-  idFieldName: string
+  idFieldName: string | []
 
   dbImplementation: DBImplementation
 
-  constructor(tableName: string, idFieldName: string, dbImplementation: DBImplementation) {
+  constructor(tableName: string, idFieldName: string | [], dbImplementation: DBImplementation) {
     this.tableName = tableName;
     this.idFieldName = idFieldName;
     this.dbImplementation = dbImplementation;
@@ -29,7 +29,7 @@ export abstract class BaseSQLEntityStorage implements EntityLocalStorage {
 
   }
 
-  abstract getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]>;
+  abstract getEntitiesByFieldMap(fieldValues: Map<string, unknown>): Promise<unknown[]>;
 
   abstract saveEntity(rawEntityObject: unknown): Promise<SaveResult>;
 }
