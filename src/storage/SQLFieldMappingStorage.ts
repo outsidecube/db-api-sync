@@ -3,7 +3,7 @@ import { DBImplementation } from "./DBImplementation";
 import { SaveResult } from "./EntityLocalStorage";
 
 export type FieldMapping = { [key: string]: string | ((row: unknown) => unknown) }
-export type EntityProcessor = (mapForSaving: Map<string, unknown>, rawObject: unknown) => Promise<unknown>
+export type EntityProcessor = (mapForSaving: Map<string, unknown>, rawObject: unknown, db?: DBImplementation) => Promise<unknown>
 export type SQLFieldMappingStorageConfig = BaseSQLEntityStorageConfig & {
   mappings: FieldMapping,
   preProcessor?: EntityProcessor,
@@ -11,13 +11,14 @@ export type SQLFieldMappingStorageConfig = BaseSQLEntityStorageConfig & {
 }
 
 export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
+  
   mappings?: FieldMapping;
 
   preProcessor?: EntityProcessor
 
   postProcessor?: EntityProcessor
 
-  constructor(tableName: string, idFieldName: string, dbImplementation: DBImplementation, mappings: FieldMapping, preProcessor?: EntityProcessor, postProcessor?: EntityProcessor) {
+  constructor(tableName: string, idFieldName: string | [], dbImplementation: DBImplementation, mappings: FieldMapping, preProcessor?: EntityProcessor, postProcessor?: EntityProcessor) {
     super(tableName, idFieldName, dbImplementation);
     this.mappings = mappings;
     this.preProcessor = preProcessor;
@@ -37,14 +38,20 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
   }
 
   async saveEntity(rawEntityObject: unknown): Promise<SaveResult> {
-    const idAttribute = this.getValueForColumn(this.idFieldName, rawEntityObject);
-    if (!idAttribute) {
-      throw new Error(`Cannot determine id for object ${JSON.stringify(rawEntityObject)}. Trying to access ${this.idFieldName} mapped object`);
+
+    const idFields = typeof this.idFieldName === 'string' ? [this.idFieldName] : this.idFieldName;
+    const idMap = new Map<string, unknown>();
+    for (const idField of idFields) {
+      const value = this.getValueForColumn(idField, rawEntityObject);
+      if (!value) {
+        throw new Error(`Cannot determine id for object ${JSON.stringify(rawEntityObject)}. Trying to access ${idField} mapped object`);
+      }
+      idMap.set(idField, value);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existing: any = await this.getEntitiesByField(this.idFieldName, idAttribute);
+    const existing: any = await this.getEntitiesByFieldMap(idMap);
     if (existing && existing.rows.length) {
-      await this.updateEntity(idAttribute, rawEntityObject);
+      await this.updateEntity(idMap, rawEntityObject);
       return {
         updated: true,
         inserted: false
@@ -59,12 +66,25 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
 
   }
 
-  getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]> {
-    const query = `select * from ${this.tableName} where ${fieldName}=?`;
-    return this.dbImplementation.executeSQL(query, [value]);
+  public async getEntitiesByFieldMap(fieldValues: Map<string, unknown>): Promise<unknown[]> {
+
+    let query = `select * from ${this.tableName}`;
+    const params = []
+    if (fieldValues.size) {
+      query += ' where '
+      let i = 0;
+      for (const key of fieldValues.keys()) {
+        if (i > 0) query += ' and '
+        query += `${key} = ?`;
+        params.push(fieldValues.get(key))
+        i += 1;
+      }
+    }
+    return this.dbImplementation.executeSQL(query, params);
   }
 
-  protected buildObjectMap(rawEntityObject: unknown, excludeId?:boolean) {
+
+  protected buildObjectMap(rawEntityObject: unknown, excludeId?: boolean) {
     const map = new Map<string, unknown>();
     for (const column in this.mappings) {
       if (Object.prototype.hasOwnProperty.call(this.mappings, column)) {
@@ -76,13 +96,13 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     return map;
   }
 
-  async updateEntity(id: unknown, rawEntityObject: unknown) {
+  async updateEntity(idFields: Map<string, unknown>, rawEntityObject: unknown) {
 
     const queryColumns: string[] = [];
     const queryValues: unknown[] = [];
     const objectMap = this.buildObjectMap(rawEntityObject, true);
     if (this.preProcessor) {
-      await this.preProcessor(objectMap, rawEntityObject);
+      await this.preProcessor(objectMap, rawEntityObject, this.dbImplementation);
     }
     objectMap.forEach((value, key) => {
       queryColumns.push(`${key} = ?`);
@@ -92,13 +112,20 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
 
     const columnNames = queryColumns.join(", ");
 
-    queryValues.push(id)
+    let whereStr = '';
+    let i = 0;
+    for (const key of idFields.keys()) {
+      if (i > 0) whereStr += ' and '
+      whereStr += `${key} = ?`;
+      queryValues.push(idFields.get(key))
+      i += 1;
+    }
     // Construct the SQL insert query
-    const query = `UPDATE ${this.tableName} SET ${columnNames} WHERE ${this.idFieldName} = ?;`;
+    const query = `UPDATE ${this.tableName} SET ${columnNames} WHERE ${whereStr};`;
 
     await this.dbImplementation.executeSQL(query, queryValues);
     if (this.postProcessor) {
-      await this.postProcessor(objectMap, rawEntityObject);
+      await this.postProcessor(objectMap, rawEntityObject, this.dbImplementation);
     }
   }
 
@@ -107,13 +134,13 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     const queryValues: unknown[] = [];
     const objectMap = this.buildObjectMap(rawEntityObject);
     if (this.preProcessor) {
-      await this.preProcessor(objectMap, rawEntityObject);
+      await this.preProcessor(objectMap, rawEntityObject, this.dbImplementation);
     }
     objectMap.forEach((value, key) => {
       queryColumns.push(key);
       queryValues.push(value);
     })
-    
+
 
     const columnNames = queryColumns.join(", ");
     const placeholders = queryValues.map(() => `?`).join(", ");
@@ -123,7 +150,7 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
 
     await this.dbImplementation.executeSQL(query, queryValues);
     if (this.postProcessor) {
-      await this.postProcessor(objectMap, rawEntityObject);
+      await this.postProcessor(objectMap, rawEntityObject, this.dbImplementation);
     }
   }
 

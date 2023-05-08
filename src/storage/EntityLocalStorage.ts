@@ -5,7 +5,7 @@ export type SaveResult = { updated?: boolean, inserted?: boolean }
 export abstract class EntityLocalStorage {
   abstract getHighestFieldValue(fieldName: string): Promise<unknown>;
 
-  abstract getEntitiesByField(fieldName: string, value: unknown): Promise<unknown[]>;
+  abstract getEntitiesByFieldMap(fieldValues: Map<string, unknown>): Promise<unknown[]>;
 
   abstract saveEntity(rawEntityObject: unknown): Promise<SaveResult>
 }
