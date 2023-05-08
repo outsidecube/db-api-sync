@@ -72,7 +72,7 @@ export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchro
   } else {
     throw new Error(`Invalid fecther ${fetcherConfig.fetcher}`);
   }
- 
+
   return fetcher;
 }
 
@@ -82,8 +82,9 @@ export function buildEntityLocalStorage(config: EntityLocalStorageConfig, synchr
     if (config.entityLocalStorage === "SQLFieldMapping") {
       const sqlConfig: SQLFieldMappingStorageConfig = config.config as SQLFieldMappingStorageConfig;
       entityLocalStorage = new SQLFieldMappingStorage(sqlConfig.tableName, sqlConfig.idFieldName,
-        sqlConfig.dbImplementation || synchronizer.globalDBImplementation, sqlConfig.mappings, sqlConfig.preProcessor)
-      
+        sqlConfig.dbImplementation || synchronizer.globalDBImplementation, sqlConfig.mappings, sqlConfig.preProcessor,
+        sqlConfig.postProcessor)
+
     } else {
       throw new Error(`Invalid EntityLocalStorage ${config.entityLocalStorage}`)
     }

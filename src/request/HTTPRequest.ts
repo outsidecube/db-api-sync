@@ -64,7 +64,7 @@ export class HTTPRequest {
       const response = await axios(this.config);
       return response;
     } catch (e) {
-      throw new Error(`Error while executing fetch to ${this.config}.`);
+      throw new Error(`Error while executing fetch to ${JSON.stringify(this.config)}. ${e}`);
     }
   }
 }

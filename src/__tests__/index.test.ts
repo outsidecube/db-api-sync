@@ -1,7 +1,7 @@
 import { BearerAuthHandlerConfig } from '../auth/BearerAuthHandler';
 import { EntityDef, HTTPRequest, Synchronizer, SynchronizerConfig, buildSynchronizer } from '../index';
 import { EntityLocalStorage } from '../storage/EntityLocalStorage';
-import { SQLFieldMappingStorage } from '../storage/SQLFieldMappingStorage';
+import { SQLFieldMappingStorage, SQLFieldMappingStorageConfig } from '../storage/SQLFieldMappingStorage';
 import { MockDBImplementation, MockResponseProcessor, ReadEntitiesCallback } from './helper/MockImplementation';
 import { expect, jest, test } from '@jest/globals';
 describe('valid EntityDefBuilder', () => {
@@ -39,13 +39,11 @@ describe('valid EntityDefBuilder', () => {
           localStorage: {
             entityLocalStorage: 'SQLFieldMapping',
             config: {
-              tablename: 'User',
+              tableName: 'User',
               idFieldName: 'id',
               mappings: {
-                Id: 'id',
-                FirstName: 'firstName',
-                LastName: 'lastName',
-                Email: 'email'
+                id: 'id',
+                name: 'name'
               },
             },
           },
@@ -96,5 +94,20 @@ describe('valid EntityDefBuilder', () => {
       getHeader: expect.any(Function)
     }));
     expect(myCallback.mock.calls[0][1].getHeader('Authorization')).toBe('Bearer abc');
+  });
+  test('should pre and post process the saved entity', async () => {
+  
+    const preProcessorCb = jest.fn( async (mapForSaving: Map<string, unknown>, rawObject: unknown) => {
+      return null
+    });
+    const postProcessorCb = jest.fn( async(mapForSaving: Map<string, unknown>, rawObject: unknown) => {
+      return null;
+    });
+    (config.entityDefs[0].localStorage.config as SQLFieldMappingStorageConfig).postProcessor = postProcessorCb;
+    (config.entityDefs[0].localStorage.config as SQLFieldMappingStorageConfig).preProcessor = preProcessorCb;
+    synchronizer = buildSynchronizer(config);
+    await synchronizer.fetchAll();
+    expect(preProcessorCb).toHaveBeenCalled();
+    expect(postProcessorCb).toHaveBeenCalled();
   });
 });
