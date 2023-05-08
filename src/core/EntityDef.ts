@@ -6,6 +6,8 @@ import { SynchronizerConfig } from "../config/SynchronizerConfig";
 import { AbstractEntityFetcher, EntityFetchCallback } from "../fetcher/AbstractEntityFetcher";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 
+export type EntityProcessor = (mapForSaving: Map<string, unknown>, rawObject: unknown) => unknown
+
 
 export class EntityDef {
   config?: SynchronizerConfig;
@@ -24,7 +26,7 @@ export class EntityDef {
 
   deletable?: boolean;
 
-  name?: string
+  name?: string;
 
   private buildResults(): EntitySyncResults {
     return {
