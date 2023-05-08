@@ -39,7 +39,7 @@ describe('valid EntityDefBuilder', () => {
           localStorage: {
             entityLocalStorage: 'SQLFieldMapping',
             config: {
-              tablename: 'User',
+              tableName: 'User',
               idFieldName: 'id',
               mappings: {
                 id: 'id',
