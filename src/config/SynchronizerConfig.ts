@@ -28,6 +28,7 @@ export type EntityDefConfig = {
   sendable?: boolean,
   fetchable?: boolean,
   deletable?: boolean,
+  percentWeight?: number,
   authorization?: AuthorizationConfig,
   /**
  * The name of the Fetch Revision Handler defined globally. It can also be a entire definition of a specific FetchRevisionHandler

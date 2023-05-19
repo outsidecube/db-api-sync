@@ -1,4 +1,4 @@
-import { EntityDef } from "../core/EntityDef";
+import { EntityDef, PercentUpdatedCallback } from "../core/EntityDef";
 import { HTTPRequest } from "../request/HTTPRequest";
 import { AbstractEntityFetcher, EntityFetchCallback } from "./AbstractEntityFetcher";
 import { HTTPResponseProcessor } from "./HTTPResponseProcessor";
@@ -27,9 +27,9 @@ export class RESTEntityFetcher implements AbstractEntityFetcher {
     this.responseProcessor = responseProcessor;
   }
 
-  public async retrieveEntities(callback: EntityFetchCallback, entityDef: EntityDef): Promise<void> {
+  public async retrieveEntities(callback: EntityFetchCallback, entityDef: EntityDef, onPercentUpdated?: PercentUpdatedCallback): Promise<void> {
     const req: HTTPRequest = await this.createRequest(entityDef);
-    return this.responseProcessor.readEntities(callback, entityDef, req);
+    return this.responseProcessor.readEntities(callback, entityDef, req, onPercentUpdated);
   }
 
   async createRequest(entityDef: EntityDef): Promise<HTTPRequest> {

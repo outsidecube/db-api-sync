@@ -48,14 +48,20 @@ export class Synchronizer {
     const totalCount = entities.length;
     if (!totalCount) return;
     callback?.onPercentageUpdate(0);
-    let c = 0;
+    const totalWeight = entities.reduce<number>((acc, e) => acc + (e.percentWeight || 1), 0);
+    let accumulatedPercent = 0;
+    let entityWeight: number;
+    const percentUpdate = (percent: number) => {
+      callback?.onPercentageUpdate(accumulatedPercent + percent * entityWeight / totalWeight);
+    }
     for (const entity of entities) {
+      entityWeight = entity.percentWeight || 1;
       callback?.onEntitySyncStarted(entity, SyncOperation.FETCH);
       // eslint-disable-next-line no-await-in-loop
-      const results = await entity.fetchEntities()
+      const results = await entity.fetchEntities(percentUpdate)
       callback?.onEntitySyncFinished(entity, SyncOperation.FETCH, results);
-      c += 1;
-      callback?.onPercentageUpdate(c * 100 / totalCount);
+      accumulatedPercent += entityWeight / totalWeight * 100;
+      callback?.onPercentageUpdate(accumulatedPercent);
     }
   }
 
