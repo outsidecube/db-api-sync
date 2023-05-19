@@ -7,8 +7,8 @@ import { AbstractEntityFetcher, EntityFetchCallback } from "../fetcher/AbstractE
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 
 export type EntityProcessor = (mapForSaving: Map<string, unknown>, rawObject: unknown) => unknown
-
-
+export type EntityFilter = (entity: EntityDef, rawObject: unknown) => Promise<boolean>
+export type PercentUpdatedCallback = (value: number) => void;
 export class EntityDef {
   config?: SynchronizerConfig;
 
@@ -22,9 +22,13 @@ export class EntityDef {
 
   sendable?: boolean;
 
+  percentWeight?: number
+
   fetchable?: boolean;
 
   deletable?: boolean;
+
+  fetchFilter?: EntityFilter;
 
   name?: string;
 
@@ -39,11 +43,15 @@ export class EntityDef {
     };
   }
 
-  public async fetchEntities(): Promise<EntitySyncResults> {
+  public async fetchEntities(onPercentUpdated?: PercentUpdatedCallback): Promise<EntitySyncResults> {
     if (!this.fetchable) throw new Error("Trying to fetch a non-fetchable entity");
     const results: EntitySyncResults = this.buildResults();
     const cb: EntityFetchCallback = async (entityDef: EntityDef, rawEntityObject) => {
       try {
+        if (this.fetchFilter && !await this.fetchFilter(this, rawEntityObject)) {
+          // skip entity
+          return;
+        }
         const resp = await this.localStorage?.saveEntity(rawEntityObject)
         if (resp?.inserted) {
           results.insertedCount += 1;
@@ -51,11 +59,11 @@ export class EntityDef {
           results.updatedCount += 1;
         }
       } catch (e) {
-        results.errorCount+=1;
+        results.errorCount += 1;
         results.errors.push(e as Error)
       }
     }
-    await this.fetcher?.retrieveEntities(cb, this);
+    await this.fetcher?.retrieveEntities(cb, this, onPercentUpdated);
     return results;
   }
 

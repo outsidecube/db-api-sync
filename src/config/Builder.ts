@@ -104,6 +104,8 @@ export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchr
     } else {
       entityDef.authHandler = synchronizer.authHandler
     }
+    entityDef.percentWeight = e.percentWeight || 1;
+    entityDef.fetchFilter = e.fetchFilter;
     entityDef.fetcher = buildFetcher(e.fetcher, synchronizer);
     entityDef.localStorage = buildEntityLocalStorage(e.localStorage, synchronizer);
     if (e.revisionHandler) {

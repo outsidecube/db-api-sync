@@ -1,5 +1,6 @@
 import { AuthHandler } from "../auth/AuthHandler"
 import { BearerAuthHandlerConfig } from "../auth/BearerAuthHandler";
+import { EntityFilter } from "../core/EntityDef";
 import { AbstractEntityFetcher } from "../fetcher/AbstractEntityFetcher"
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
@@ -28,6 +29,8 @@ export type EntityDefConfig = {
   sendable?: boolean,
   fetchable?: boolean,
   deletable?: boolean,
+  percentWeight?: number,
+  fetchFilter?: EntityFilter,
   authorization?: AuthorizationConfig,
   /**
  * The name of the Fetch Revision Handler defined globally. It can also be a entire definition of a specific FetchRevisionHandler
