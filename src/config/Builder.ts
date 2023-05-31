@@ -7,9 +7,12 @@ import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
 import { RESTEntityFetcher, RESTEntityFetcherConfig } from "../fetcher/RESTEntityFetcher";
 import { TimestampFieldRevisionHandler, TimestampFieldRevisionHandlerConfig } from "../fetcher/TimestampFieldRevisionHandler";
+import { AbstractEntitySender } from "../sender/AbstractEntitySender";
+import { FieldValueChangeDetector, FieldValueChangeDetectorConfig } from "../sender/FieldValueChangeDetector";
+import { LocalChangeDetector } from "../sender/LocalChangeDetector";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { SQLFieldMappingStorage, SQLFieldMappingStorageConfig } from "../storage/SQLFieldMappingStorage";
-import { AuthorizationConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPResponseProcessorConfig, SynchronizerConfig } from "./SynchronizerConfig";
+import { AuthorizationConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPResponseProcessorConfig, LocalChangeDetectorConfig, SenderConfig, SynchronizerConfig } from "./SynchronizerConfig";
 
 export function buildAuthHandler(authorization: AuthorizationConfig): AuthHandler {
   if (authorization.handler === "BearerAuthHandler") {
@@ -48,7 +51,9 @@ export function buildFetchRevisionHandler(fetchConfig: FetchRevisionHandlerConfi
   return fetchRevisionHandler;
 
 }
-
+export function buildSender(senderConfig: SenderConfig): AbstractEntitySender {
+  return senderConfig.sender;
+}
 export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchronizer): AbstractEntityFetcher {
   let fetcher: AbstractEntityFetcher;
   if (typeof fetcherConfig.fetcher === 'string') {
@@ -76,6 +81,23 @@ export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchro
   return fetcher;
 }
 
+export function buildLocalChangeDetector(localChangeDetectorConfig: LocalChangeDetectorConfig): LocalChangeDetector {
+  let localChangeDetector: LocalChangeDetector;
+  if (typeof localChangeDetectorConfig.localChangeDetector === 'string') {
+    if (localChangeDetectorConfig.localChangeDetector === "FieldValueChangeDetector") {
+      const config: FieldValueChangeDetectorConfig = localChangeDetectorConfig.config as FieldValueChangeDetectorConfig;
+      localChangeDetector = new FieldValueChangeDetector(config.field, config.value, config.valueAfterSync);
+    } else {
+      throw new Error(`Invalid LocalChangeDetector ${localChangeDetectorConfig.localChangeDetector}`);
+    }
+  } else if (localChangeDetectorConfig.localChangeDetector instanceof LocalChangeDetector) {
+    localChangeDetector = localChangeDetectorConfig.localChangeDetector;
+  } else {
+    throw new Error(`Invalid localChangeDetector ${localChangeDetectorConfig.localChangeDetector}`);
+  }
+
+  return localChangeDetector;
+}
 export function buildEntityLocalStorage(config: EntityLocalStorageConfig, synchronizer: Synchronizer): EntityLocalStorage {
   let entityLocalStorage: EntityLocalStorage;
   if (typeof config.entityLocalStorage === 'string') {
@@ -106,7 +128,15 @@ export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchr
     }
     entityDef.percentWeight = e.percentWeight || 1;
     entityDef.fetchFilter = e.fetchFilter;
-    entityDef.fetcher = buildFetcher(e.fetcher, synchronizer);
+    if (e.fetcher) {
+      entityDef.fetcher = buildFetcher(e.fetcher, synchronizer);
+    }
+    if (e.sender) {
+      entityDef.sender = buildSender(e.sender);
+    }
+    if (e.localChangeDetector) {
+      entityDef.localChangeDetector = buildLocalChangeDetector(e.localChangeDetector);
+    }
     entityDef.localStorage = buildEntityLocalStorage(e.localStorage, synchronizer);
     if (e.revisionHandler) {
       let revisionHandler: FetchRevisionHandler | undefined;

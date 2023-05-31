@@ -5,6 +5,8 @@ import { EntitySyncResults } from "./EntitySyncResults";
 import { SynchronizerConfig } from "../config/SynchronizerConfig";
 import { AbstractEntityFetcher, EntityFetchCallback } from "../fetcher/AbstractEntityFetcher";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
+import { LocalChangeDetector } from "../sender/LocalChangeDetector";
+import { AbstractEntitySender } from "../sender/AbstractEntitySender";
 
 export type EntityProcessor = (mapForSaving: Map<string, unknown>, rawObject: unknown) => unknown
 export type EntityFilter = (entity: EntityDef, rawObject: unknown) => Promise<boolean>
@@ -18,7 +20,11 @@ export class EntityDef {
 
   fetcher?: AbstractEntityFetcher;
 
+  sender?: AbstractEntitySender;
+
   localStorage?: EntityLocalStorage;
+
+  localChangeDetector?: LocalChangeDetector;
 
   sendable?: boolean;
 
@@ -71,6 +77,15 @@ export class EntityDef {
     if (!this.sendable) throw new Error("Trying to fetch a non-sendable entity");
     const results: EntitySyncResults = this.buildResults();
     results.sentCount = 0;
+    
+    const rawEntities = await this.localChangeDetector?.getChangedEntities(this);
+    if (rawEntities) {
+      for (const rawEntity of rawEntities) {
+        // eslint-disable-next-line no-await-in-loop
+        await this.sender?.sendEntity(rawEntity, this);
+      }
+      
+    }
     return results;
   }
 

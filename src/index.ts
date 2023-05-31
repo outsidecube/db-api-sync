@@ -8,8 +8,9 @@ import { EntitySyncCallback } from "./core/EntitySyncCallback";
 import { DBImplementation } from "./storage/DBImplementation";
 import { buildSynchronizer } from './config/Builder'
 import { EntityLocalStorage } from "./storage/EntityLocalStorage";
+import { AbstractEntitySender } from "./sender/AbstractEntitySender";
 
 export {
   Synchronizer, EntityDef, EntitySyncCallback, SynchronizerConfig, buildSynchronizer, EntityLocalStorage, EntityDefConfig,
-  DBImplementation, EntityFetchCallback, HTTPResponseProcessor, HTTPRequest, HTTPResponse
+  DBImplementation, EntityFetchCallback, HTTPResponseProcessor, HTTPRequest, HTTPResponse, AbstractEntitySender
 };
