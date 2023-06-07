@@ -60,11 +60,7 @@ export class HTTPRequest {
   }
 
   public async fetch(): Promise<HTTPResponse> {
-    try {
-      const response = await axios(this.config);
-      return response;
-    } catch (e) {
-      throw new Error(`Error while executing fetch to ${JSON.stringify(this.config)}. ${e}`);
-    }
+    const response = await axios(this.config);
+    return response;
   }
 }

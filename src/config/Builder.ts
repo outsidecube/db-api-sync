@@ -9,7 +9,9 @@ import { RESTEntityFetcher, RESTEntityFetcherConfig } from "../fetcher/RESTEntit
 import { TimestampFieldRevisionHandler, TimestampFieldRevisionHandlerConfig } from "../fetcher/TimestampFieldRevisionHandler";
 import { AbstractEntitySender } from "../sender/AbstractEntitySender";
 import { FieldValueChangeDetector, FieldValueChangeDetectorConfig } from "../sender/FieldValueChangeDetector";
+import { HTTPRequestProcessor } from "../sender/HTTPRequestProcessor";
 import { LocalChangeDetector } from "../sender/LocalChangeDetector";
+import { RESTEntitySender, RESTEntitySenderConfig } from "../sender/RESTEntitySender";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { SQLFieldMappingStorage, SQLFieldMappingStorageConfig } from "../storage/SQLFieldMappingStorage";
 import { AuthorizationConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPResponseProcessorConfig, LocalChangeDetectorConfig, SenderConfig, SynchronizerConfig } from "./SynchronizerConfig";
@@ -52,7 +54,25 @@ export function buildFetchRevisionHandler(fetchConfig: FetchRevisionHandlerConfi
 
 }
 export function buildSender(senderConfig: SenderConfig): AbstractEntitySender {
-  return senderConfig.sender;
+  let sender: AbstractEntitySender;
+  if (typeof senderConfig.sender === 'string') {
+    if (senderConfig.sender === "RESTEntitySender") {
+      const config: RESTEntitySenderConfig = senderConfig.config as RESTEntitySenderConfig;
+      const httpRequestProcessor: HTTPRequestProcessor = config.requestProcessor;
+      if (!httpRequestProcessor) {
+        throw new Error(`No RequestProcessor for sender ${JSON.stringify(senderConfig)}`)
+      }
+      sender = new RESTEntitySender(config.uriPath, httpRequestProcessor, config.method, config.additionalQueryParams);
+    } else {
+      throw new Error(`Invalid sender ${senderConfig.sender}`);
+    }
+  } else if (senderConfig.sender instanceof AbstractEntitySender) {
+    sender = senderConfig.sender;
+  } else {
+    throw new Error(`Invalid sender ${senderConfig.sender}`);
+  }
+
+  return sender;
 }
 export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchronizer): AbstractEntityFetcher {
   let fetcher: AbstractEntityFetcher;

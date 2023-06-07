@@ -1,3 +1,14 @@
+import { EntityDef } from "./EntityDef"
+import { SyncOperation } from "./SyncOperation"
+
+export type SyncError = {
+  errorMsg?: string,
+  exception?: Error,
+  entityDef?: EntityDef,
+  rawObject?: unknown,
+  operation?: SyncOperation
+}
+
 /**
  * Type representing a synchronization result over a specific entity
  */
@@ -26,5 +37,5 @@ export type EntitySyncResults = {
   /**
    * Array of Errors happened during processing
    */
-  errors: Error[]
+  errors: SyncError[]
 }

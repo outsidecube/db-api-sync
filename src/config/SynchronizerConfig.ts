@@ -9,13 +9,14 @@ import { TimestampFieldRevisionHandlerConfig } from "../fetcher/TimestampFieldRe
 import { AbstractEntitySender } from "../sender/AbstractEntitySender";
 import { FieldValueChangeDetectorConfig } from "../sender/FieldValueChangeDetector";
 import { LocalChangeDetector } from "../sender/LocalChangeDetector";
+import { RESTEntitySenderConfig } from "../sender/RESTEntitySender";
 import { DBImplementation } from "../storage/DBImplementation";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { SQLFieldMappingStorageConfig } from "../storage/SQLFieldMappingStorage";
 
 export type AuthHandlerType = "BearerAuthHandler" | AuthHandler;
 export type FetcherType = "RESTEntityFetcher" | AbstractEntityFetcher;
-export type SenderType = AbstractEntitySender;
+export type SenderType = "RESTEntitySender" | AbstractEntitySender;
 export type LocalChangeDetectorType = "FieldValueChangeDetector" | LocalChangeDetector;
 
 export type EntityLocalStorageType = "SQLFieldMapping" | EntityLocalStorage;
@@ -35,7 +36,7 @@ export type LocalChangeDetectorConfig = {
 }
 export type SenderConfig = {
   sender: SenderType,
-  config?: unknown
+  config?: RESTEntitySenderConfig | unknown
 }
 export type EntityDefConfig = {
   fetcher?: FetcherConfig,

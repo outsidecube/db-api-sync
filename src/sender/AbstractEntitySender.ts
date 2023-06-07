@@ -1,6 +1,6 @@
-import { EntityDef } from "../core/EntityDef";
+import { EntityDef, PercentUpdatedCallback } from "../core/EntityDef";
 
 export abstract class AbstractEntitySender  {
   
-  abstract sendEntity(rawEntity:unknown, entityDef: EntityDef): Promise<unknown>;
+  abstract sendEntity(rawEntity:unknown, entityDef: EntityDef, onPercentUpdated?: PercentUpdatedCallback): Promise<unknown>;
 }

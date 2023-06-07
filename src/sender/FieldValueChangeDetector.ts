@@ -26,14 +26,14 @@ export class FieldValueChangeDetector extends LocalChangeDetector {
     if (!entityDef || !entityDef.localStorage) {
       throw new Error("Invalid EntityDef: must have a localStorage configured");
     }
+
     const fieldMap = new Map<string, unknown>();
     let entities: unknown[] = [];
     if (Array.isArray(this.value)) {
       for (const v of this.value) {
         fieldMap.set(this.field, v);
         // eslint-disable-next-line no-await-in-loop
-        const currEntities = await entityDef.localStorage.getEntitiesByFieldMap(fieldMap);
-        entities.push(...currEntities);
+        entities = await entityDef.localStorage.getEntitiesByFieldMap(fieldMap);
       }
     } else {
       fieldMap.set(this.field, this.value);
@@ -42,7 +42,8 @@ export class FieldValueChangeDetector extends LocalChangeDetector {
     return entities;
   }
 
-  async updateEntityAfterSync(rawEntity: unknown, entityDef: EntityDef): Promise<SaveResult> {
+  async updateEntityAfterSync(rawEntity: unknown, entityDef: EntityDef): Promise<SaveResult | null> {
+    if (this.valueAfterSync === undefined || this.valueAfterSync === null) return null; 
     if (!entityDef || !entityDef.localStorage) {
       throw new Error("Invalid EntityDef: must have a localStorage configured");
     }
