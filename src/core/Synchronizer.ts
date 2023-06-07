@@ -45,7 +45,7 @@ export class Synchronizer {
 
   public async fetchAll(callback?: EntitySyncCallback) {
     const entities = this.filterEntityDefs(e => e.fetchable);
-    const totalCount = entities.length;
+    const totalCount = entities?.length;
     if (!totalCount) return;
     callback?.onPercentageUpdate(0);
     const totalWeight = entities.reduce<number>((acc, e) => acc + (e.percentWeight || 1), 0);

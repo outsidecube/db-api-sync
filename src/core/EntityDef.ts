@@ -5,6 +5,9 @@ import { EntitySyncResults } from "./EntitySyncResults";
 import { SynchronizerConfig } from "../config/SynchronizerConfig";
 import { AbstractEntityFetcher, EntityFetchCallback } from "../fetcher/AbstractEntityFetcher";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
+import { LocalChangeDetector } from "../sender/LocalChangeDetector";
+import { AbstractEntitySender } from "../sender/AbstractEntitySender";
+import { SyncOperation } from "./SyncOperation";
 
 export type EntityProcessor = (mapForSaving: Map<string, unknown>, rawObject: unknown) => unknown
 export type EntityFilter = (entity: EntityDef, rawObject: unknown) => Promise<boolean>
@@ -18,7 +21,11 @@ export class EntityDef {
 
   fetcher?: AbstractEntityFetcher;
 
+  sender?: AbstractEntitySender;
+
   localStorage?: EntityLocalStorage;
+
+  localChangeDetector?: LocalChangeDetector;
 
   sendable?: boolean;
 
@@ -60,7 +67,10 @@ export class EntityDef {
         }
       } catch (e) {
         results.errorCount += 1;
-        results.errors.push(e as Error)
+        results.errors.push({
+          entityDef, errorMsg: `${e}`, operation: SyncOperation.FETCH,
+          exception: e as Error, rawObject: rawEntityObject
+        })
       }
     }
     await this.fetcher?.retrieveEntities(cb, this, onPercentUpdated);
@@ -71,7 +81,31 @@ export class EntityDef {
     if (!this.sendable) throw new Error("Trying to fetch a non-sendable entity");
     const results: EntitySyncResults = this.buildResults();
     results.sentCount = 0;
-    return results;
+    try {
+
+      const rawEntities = await this.localChangeDetector?.getChangedEntities(this);
+      if (rawEntities) {
+        for (const rawEntity of rawEntities) {
+          try {
+
+            // eslint-disable-next-line no-await-in-loop
+            await this.sender?.sendEntity(rawEntity, this);
+            results.sentCount += 1;
+          } catch (e) {
+            results.errorCount += 1;
+            results.errors.push({
+              entityDef: this, operation: SyncOperation.SEND, errorMsg: `${e}`,
+              exception: e as Error, rawObject: rawEntity
+            })
+          }
+        }
+
+      }
+      return results;
+    } catch (e) {
+      console.log("error getting entities for sync", e)
+      throw e;
+    }
   }
 
   public async deleteEntities(): Promise<EntitySyncResults> {
