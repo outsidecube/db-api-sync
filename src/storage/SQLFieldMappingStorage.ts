@@ -38,15 +38,16 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
   }
 
   async saveEntity(rawEntityObject: unknown): Promise<SaveResult> {
-
     const idFields = typeof this.idFieldName === 'string' ? [this.idFieldName] : this.idFieldName;
     const idMap = new Map<string, unknown>();
-    for (const idField of idFields) {
-      const value = this.getValueForColumn(idField, rawEntityObject);
-      if (!value) {
-        throw new Error(`Cannot determine id for object ${JSON.stringify(rawEntityObject)}. Trying to access ${idField} mapped object`);
+    if (idFields) {
+      for (const idField of idFields) {
+        const value = this.getValueForColumn(idField, rawEntityObject);
+        if (!value) {
+          throw new Error(`Cannot determine id for object ${JSON.stringify(rawEntityObject)}. Trying to access ${idField} mapped object`);
+        }
+        idMap.set(idField, value);
       }
-      idMap.set(idField, value);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existing: any = await this.getEntitiesByFieldMap(idMap);
@@ -67,7 +68,7 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
   }
 
   public async getEntitiesByFieldMap(fieldValues: Map<string, unknown>): Promise<unknown[]> {
-
+    if (!this.tableName) return [];
     let query = `select * from ${this.tableName}`;
     const params = []
     if (fieldValues.size) {
@@ -110,6 +111,8 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     if (this.preProcessor) {
       await this.preProcessor(objectMap, rawEntityObject, this.dbImplementation);
     }
+    if (!this.tableName) return;
+
     objectMap.forEach((value, key) => {
       queryColumns.push(`${key} = ?`);
       queryValues.push(value);
@@ -142,6 +145,8 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     if (this.preProcessor) {
       await this.preProcessor(objectMap, rawEntityObject, this.dbImplementation);
     }
+    if (!this.tableName) return;
+
     objectMap.forEach((value, key) => {
       queryColumns.push(key);
       queryValues.push(value);
