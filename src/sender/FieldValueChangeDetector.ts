@@ -30,11 +30,16 @@ export class FieldValueChangeDetector extends LocalChangeDetector {
     const fieldMap = new Map<string, unknown>();
     let entities: unknown[] = [];
     if (Array.isArray(this.value)) {
+      const tempEntities: unknown[] = []
       for (const v of this.value) {
         fieldMap.set(this.field, v);
         // eslint-disable-next-line no-await-in-loop
-        entities = await entityDef.localStorage.getEntitiesByFieldMap(fieldMap);
+        const temp = await entityDef.localStorage.getEntitiesByFieldMap(fieldMap);
+        temp?.forEach(e=> {
+          tempEntities.push(e);
+        });
       }
+      entities = tempEntities;
     } else {
       fieldMap.set(this.field, this.value);
       entities = await entityDef.localStorage.getEntitiesByFieldMap(fieldMap);
