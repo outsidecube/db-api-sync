@@ -3,7 +3,7 @@ import { AuthHandler } from "../auth/AuthHandler";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { EntitySyncResults } from "./EntitySyncResults";
 import { SynchronizerConfig } from "../config/SynchronizerConfig";
-import { AbstractEntityFetcher, EntityFetchCallback } from "../fetcher/AbstractEntityFetcher";
+import { AbstractEntityFetcher, EntityFetchCallback, EntityFetchCallbackError } from "../fetcher/AbstractEntityFetcher";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { LocalChangeDetector } from "../sender/LocalChangeDetector";
 import { AbstractEntitySender } from "../sender/AbstractEntitySender";
@@ -73,7 +73,15 @@ export class EntityDef {
         })
       }
     }
-    await this.fetcher?.retrieveEntities(cb, this, onPercentUpdated);
+    const errorCb: EntityFetchCallbackError = async (entityDef: EntityDef, exception: unknown, errorString: string, rawEntityObject: unknown) => {
+      
+      results.errorCount += 1;
+      results.errors.push({
+        entityDef, errorMsg: errorString, operation: SyncOperation.FETCH,
+        exception: exception as Error, rawObject: rawEntityObject
+      })
+    }
+    await this.fetcher?.retrieveEntities(cb, errorCb, this, onPercentUpdated);
     return results;
   }
 
