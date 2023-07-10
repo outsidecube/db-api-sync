@@ -103,7 +103,7 @@ export class EntityDef {
             results.errorCount += 1;
             results.errors.push({
               entityDef: this, operation: SyncOperation.SEND, errorMsg: `${e}`,
-              exception: e as Error, rawObject: rawEntity
+              exception: e instanceof Error ? e as Error : new Error(`${e}`), rawObject: rawEntity
             })
           }
         }
