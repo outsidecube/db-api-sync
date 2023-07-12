@@ -1,3 +1,4 @@
+import { EntityId } from "../deletion/AbstractDeletionDetector";
 import { BaseSQLEntityStorage, BaseSQLEntityStorageConfig } from "./BaseSQLEntityStorage";
 import { DBImplementation } from "./DBImplementation";
 import { SaveResult } from "./EntityLocalStorage";
@@ -11,7 +12,7 @@ export type SQLFieldMappingStorageConfig = BaseSQLEntityStorageConfig & {
 }
 
 export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
-  
+
   mappings?: FieldMapping;
 
   preProcessor?: EntityProcessor
@@ -35,6 +36,22 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
       value = mapping(rawEntityObject);
     }
     return value;
+  }
+
+  async deleteEntity(id: EntityId): Promise<void> {
+    const idFields = typeof this.idFieldName === 'string' ? [this.idFieldName] : this.idFieldName;
+    if (idFields.length > 1) {
+
+      throw new Error(`Cannot delete entity with combined id: unsupported op`);
+
+    }
+    const whereStr = `${idFields[0]} = ?`;
+    const queryValues: unknown[] = [];
+    queryValues.push(id);
+    // Construct the SQL delete query
+    const query = `DELETE FROM ${this.tableName} WHERE ${whereStr};`;
+
+    await this.dbImplementation.executeSQL(query, queryValues);
   }
 
   async saveEntity(rawEntityObject: unknown): Promise<SaveResult> {
@@ -85,9 +102,9 @@ export class SQLFieldMappingStorage extends BaseSQLEntityStorage {
     if (resp && resp.rows?.length) {
       // eslint-disable-next-line no-underscore-dangle
       return resp.rows?._array;
-    } 
-      return [];
-    
+    }
+    return [];
+
   }
 
 

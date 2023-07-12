@@ -1,5 +1,5 @@
 import { EntityDef } from "../../core/EntityDef";
-import { EntityFetchCallback } from "../../fetcher/AbstractEntityFetcher";
+import { EntityFetchCallback, EntityFetchCallbackError } from "../../fetcher/AbstractEntityFetcher";
 import { HTTPResponseProcessor } from "../../fetcher/HTTPResponseProcessor";
 import { HTTPRequest } from "../../request/HTTPRequest";
 import { DBImplementation } from "../../storage/DBImplementation";
@@ -19,7 +19,7 @@ export class MockResponseProcessor extends HTTPResponseProcessor {
     super();
     this.readEntitiesCallback = readEntitiesCallback;
   }
-  async readEntities(callback: EntityFetchCallback, entityDef: EntityDef, originalRequest: HTTPRequest): Promise<void> {
+  async readEntities(callback: EntityFetchCallback, callbackError: EntityFetchCallbackError, entityDef: EntityDef, originalRequest: HTTPRequest): Promise<void> {
     if (this.readEntitiesCallback) {
       this.readEntitiesCallback(entityDef, originalRequest)
     }

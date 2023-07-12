@@ -1,3 +1,4 @@
+import { EntityId } from "../deletion/AbstractDeletionDetector";
 import { DBImplementation } from "./DBImplementation";
 import { EntityLocalStorage, SaveResult } from "./EntityLocalStorage";
 
@@ -32,4 +33,6 @@ export abstract class BaseSQLEntityStorage implements EntityLocalStorage {
   abstract getEntitiesByFieldMap(fieldValues: Map<string, unknown>): Promise<unknown[]>;
 
   abstract saveEntity(rawEntityObject: unknown): Promise<SaveResult>;
+
+  abstract deleteEntity(id: EntityId): Promise<void>;
 }

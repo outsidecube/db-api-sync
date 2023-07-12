@@ -2,6 +2,9 @@ import { AuthHandler } from "../auth/AuthHandler";
 import { BearerAuthHandler, BearerAuthHandlerConfig } from "../auth/BearerAuthHandler";
 import { EntityDef } from "../core/EntityDef";
 import { Synchronizer } from "../core/Synchronizer";
+import { AbstractDeletionDetector } from "../deletion/AbstractDeletionDetector";
+import { HTTPDeletionResponseProcessor } from "../deletion/HTTPDeletionResponseProcessor";
+import { RESTEntityDeletionConfig, RESTEntityDeletionDetector } from "../deletion/RESTEntityDeletionDetector";
 import { AbstractEntityFetcher } from "../fetcher/AbstractEntityFetcher";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
@@ -14,7 +17,7 @@ import { LocalChangeDetector } from "../sender/LocalChangeDetector";
 import { RESTEntitySender, RESTEntitySenderConfig } from "../sender/RESTEntitySender";
 import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { SQLFieldMappingStorage, SQLFieldMappingStorageConfig } from "../storage/SQLFieldMappingStorage";
-import { AuthorizationConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPResponseProcessorConfig, LocalChangeDetectorConfig, SenderConfig, SynchronizerConfig } from "./SynchronizerConfig";
+import { AuthorizationConfig, DeletionDetectorConfig, EntityDefConfig, EntityLocalStorageConfig, FetcherConfig, FetchRevisionHandlerConfig, Formatter, FormatterConfig, HTTPDeletionResponseProcessorConfig, HTTPResponseProcessorConfig, LocalChangeDetectorConfig, SenderConfig, SynchronizerConfig } from "./SynchronizerConfig";
 
 export function buildAuthHandler(authorization: AuthorizationConfig): AuthHandler {
   if (authorization.handler === "BearerAuthHandler") {
@@ -74,6 +77,33 @@ export function buildSender(senderConfig: SenderConfig): AbstractEntitySender {
 
   return sender;
 }
+export function buildDeletionDetector(deletionDetectorConfig: DeletionDetectorConfig, synchronizer: Synchronizer): AbstractDeletionDetector {
+  let deletionDetector: AbstractDeletionDetector;
+  if (typeof deletionDetectorConfig.deletionDetector === 'string') {
+    if (deletionDetectorConfig.deletionDetector === "RESTEntityDeletionDetector") {
+      const config: RESTEntityDeletionConfig = deletionDetectorConfig.config as RESTEntityDeletionConfig;
+      let httpDeletionResponseProcessor: HTTPDeletionResponseProcessor | undefined;
+      if (typeof config.responseProcessor === 'string') {
+        httpDeletionResponseProcessor = synchronizer.httpDeletionResponseProcessors.get(config.responseProcessor);
+      } else {
+        httpDeletionResponseProcessor = config.responseProcessor
+      }
+      if (!httpDeletionResponseProcessor) {
+        throw new Error(`No responseProcessor for deletionDetector ${JSON.stringify(deletionDetectorConfig)}`)
+      }
+      deletionDetector = new RESTEntityDeletionDetector(config.uriPath, httpDeletionResponseProcessor, config.method, config.additionalQueryParams);
+    } else {
+      throw new Error(`Invalid deletionDetector ${deletionDetectorConfig.deletionDetector}`);
+    }
+  } else if (deletionDetectorConfig.deletionDetector instanceof AbstractDeletionDetector) {
+    deletionDetector = deletionDetectorConfig.deletionDetector;
+  } else {
+    throw new Error(`Invalid deletion detector ${deletionDetectorConfig.deletionDetector}`);
+  }
+
+  return deletionDetector;
+}
+
 export function buildFetcher(fetcherConfig: FetcherConfig, synchronizer: Synchronizer): AbstractEntityFetcher {
   let fetcher: AbstractEntityFetcher;
   if (typeof fetcherConfig.fetcher === 'string') {
@@ -137,6 +167,22 @@ export function buildEntityLocalStorage(config: EntityLocalStorageConfig, synchr
   }
   return entityLocalStorage;
 }
+export function configureFetchRevisionHandler(revisionHandlerConfig: string | FetchRevisionHandlerConfig, synchronizer: Synchronizer) {
+  let revisionHandler: FetchRevisionHandler | undefined;
+  if (typeof revisionHandlerConfig === 'string') {
+    revisionHandler = synchronizer.fetchRevisionHandlers.get(revisionHandlerConfig);
+    if (!revisionHandler) {
+      throw new Error(`No FetchRevisionHandler found for name ${revisionHandlerConfig}`)
+    }
+  } else if (typeof revisionHandlerConfig === 'object') {
+    try {
+      revisionHandler = buildFetchRevisionHandler(revisionHandlerConfig as FetchRevisionHandlerConfig, synchronizer);
+    } catch (err) {
+      throw new Error(`Couldnt build FetchRevisionHandler for EntityDef: ${err}`)
+    }
+  }
+  return revisionHandler;
+}
 export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchronizer): Map<string, EntityDef> {
   const entityDefs = new Map<string, EntityDef>();
   config.entityDefs.forEach(e => {
@@ -157,22 +203,15 @@ export function buildEntityDefs(config: SynchronizerConfig, synchronizer: Synchr
     if (e.localChangeDetector) {
       entityDef.localChangeDetector = buildLocalChangeDetector(e.localChangeDetector);
     }
+    if (e.deletionDetector) {
+      entityDef.deletionDetector = buildDeletionDetector(e.deletionDetector, synchronizer);
+    }
     entityDef.localStorage = buildEntityLocalStorage(e.localStorage, synchronizer);
     if (e.revisionHandler) {
-      let revisionHandler: FetchRevisionHandler | undefined;
-      if (typeof e.revisionHandler === 'string') {
-        revisionHandler = synchronizer.fetchRevisionHandlers.get(e.revisionHandler);
-        if (!revisionHandler) {
-          throw new Error(`No FetchRevisionHandler found for name ${e.revisionHandler}`)
-        }
-      } else if (typeof e.revisionHandler === 'object') {
-        try {
-          revisionHandler = buildFetchRevisionHandler(e.revisionHandler as FetchRevisionHandlerConfig, synchronizer);
-        } catch (err) {
-          throw new Error(`Couldnt build FetchRevisionHandler for EntityDef ${e}: ${err}`)
-        }
-      }
-      entityDef.fetchRevisionHandler = revisionHandler;
+      entityDef.fetchRevisionHandler = configureFetchRevisionHandler(e.revisionHandler, synchronizer);
+    }
+    if (e.deleteRevisionHandler) {
+      entityDef.deleteRevisionHandler = configureFetchRevisionHandler(e.deleteRevisionHandler, synchronizer);
     }
     entityDef.config = config;
     entityDef.name = e.name;
@@ -212,6 +251,14 @@ function buildHTTPResponseProcessors(httpResponseProcessors: HTTPResponseProcess
   return m;
 }
 
+function buildHTTPDeletionResponseProcessors(httpDeletionResponseProcessors: HTTPDeletionResponseProcessorConfig[]): Map<string, HTTPDeletionResponseProcessor> {
+  const m = new Map<string, HTTPDeletionResponseProcessor>();
+  httpDeletionResponseProcessors.forEach(httpDeletionResponseProcessorConfig => {
+    m.set(httpDeletionResponseProcessorConfig.name, httpDeletionResponseProcessorConfig.httpDeletionResponseProcessor);
+  })
+  return m;
+}
+
 export function buildSynchronizer(config: SynchronizerConfig): Synchronizer {
   const synchronizer = new Synchronizer(config);
   synchronizer.authHandler = buildAuthHandler(config.authorization);
@@ -221,6 +268,9 @@ export function buildSynchronizer(config: SynchronizerConfig): Synchronizer {
   }
   if (config.httpResponseProcessors) {
     synchronizer.httpResponseProcessors = buildHTTPResponseProcessors(config.httpResponseProcessors)
+  }
+  if (config.httpDeletionResponseProcessors) {
+    synchronizer.httpDeletionResponseProcessors = buildHTTPDeletionResponseProcessors(config.httpDeletionResponseProcessors);
   }
   synchronizer.fetchRevisionHandlers = buildFetchRevisionHandlers(config.revisionHandlers, synchronizer);
   const entityDefs = buildEntityDefs(config, synchronizer);

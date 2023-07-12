@@ -1,5 +1,6 @@
 import { AuthHandler } from "../auth/AuthHandler";
 import { Formatter, SynchronizerConfig } from "../config/SynchronizerConfig";
+import { HTTPDeletionResponseProcessor } from "../deletion/HTTPDeletionResponseProcessor";
 import { FetchRevisionHandler } from "../fetcher/FetchRevisionHandler";
 import { HTTPResponseProcessor } from "../fetcher/HTTPResponseProcessor";
 import { DBImplementation } from "../storage/DBImplementation";
@@ -25,6 +26,8 @@ export class Synchronizer {
   formatters: Map<string, Formatter>;
 
   httpResponseProcessors: Map<string, HTTPResponseProcessor>;
+  
+  httpDeletionResponseProcessors: Map<string, HTTPDeletionResponseProcessor>;
 
   constructor(config: SynchronizerConfig) {
     this.config = config;
@@ -32,7 +35,7 @@ export class Synchronizer {
     this.fetchRevisionHandlers = new Map<string, FetchRevisionHandler>();
     this.formatters = new Map<string, Formatter>();
     this.httpResponseProcessors = new Map<string, HTTPResponseProcessor>();
-
+    this.httpDeletionResponseProcessors = new Map<string, HTTPDeletionResponseProcessor>();
   }
 
   private filterEntityDefs(fn: (e: EntityDef) => boolean | undefined): Array<EntityDef> {
