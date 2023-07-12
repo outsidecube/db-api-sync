@@ -1,6 +1,6 @@
 {
   "name": "@outsidecube/db-api-sync",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Local/remote synchronization library targeted to offline first apps",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
