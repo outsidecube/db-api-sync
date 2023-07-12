@@ -8,6 +8,7 @@ import { EntityLocalStorage } from "../storage/EntityLocalStorage";
 import { LocalChangeDetector } from "../sender/LocalChangeDetector";
 import { AbstractEntitySender } from "../sender/AbstractEntitySender";
 import { SyncOperation } from "./SyncOperation";
+import { AbstractDeletionDetector, EntityDeletionCallback, EntityDeletionCallbackError, EntityId } from "../deletion/AbstractDeletionDetector";
 
 export type EntityProcessor = (mapForSaving: Map<string, unknown>, rawObject: unknown) => unknown
 export type EntityFilter = (entity: EntityDef, rawObject: unknown) => Promise<boolean>
@@ -19,9 +20,13 @@ export class EntityDef {
 
   fetchRevisionHandler?: FetchRevisionHandler;
 
+  deleteRevisionHandler?: FetchRevisionHandler;
+
   fetcher?: AbstractEntityFetcher;
 
   sender?: AbstractEntitySender;
+
+  deletionDetector?: AbstractDeletionDetector;
 
   localStorage?: EntityLocalStorage;
 
@@ -74,7 +79,7 @@ export class EntityDef {
       }
     }
     const errorCb: EntityFetchCallbackError = async (entityDef: EntityDef, exception: unknown, errorString: string, rawEntityObject: unknown) => {
-      
+
       results.errorCount += 1;
       results.errors.push({
         entityDef, errorMsg: errorString, operation: SyncOperation.FETCH,
@@ -119,7 +124,29 @@ export class EntityDef {
   public async deleteEntities(): Promise<EntitySyncResults> {
     if (!this.deletable) throw new Error("Trying to delete a non-deletable entity");
     const results: EntitySyncResults = this.buildResults();
-    results.deletedCount = 0;
+
+    const cb: EntityDeletionCallback = async (entityDef: EntityDef, id: EntityId) => {
+      try {
+
+        await this.localStorage?.deleteEntity(id);
+        results.deletedCount += 1;
+      } catch (e) {
+        results.errorCount += 1;
+        results.errors.push({
+          entityDef, errorMsg: `${e}`, operation: SyncOperation.FETCH,
+          exception: e as Error
+        })
+      }
+    }
+    const errorCb: EntityDeletionCallbackError = async (entityDef: EntityDef, exception: unknown, errorString: string) => {
+
+      results.errorCount += 1;
+      results.errors.push({
+        entityDef, errorMsg: errorString, operation: SyncOperation.FETCH,
+        exception: exception as Error
+      })
+    }
+    await this.deletionDetector?.detectEntitiesToDelete(cb, errorCb, this);
     return results;
   }
 }
